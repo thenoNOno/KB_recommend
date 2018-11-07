@@ -1,2 +1,2 @@
 knowledgeGraph base recommend
-基于数库金融知识图谱的新闻推荐项目
+
