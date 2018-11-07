@@ -411,12 +411,10 @@ def main():
 
     """
     #文件路径
-    #event_doc = '/projects/KB_recommend/test/train/train_1012.txt'
-    #event_doc = '/projects/KB_recommend/test/depot/content_term.txt_event_term.txt'
-    event_doc = '/projects/KB_recommend/test/train/news_labels.txt'
-    book = '/projects/KB_recommend/test/train/train_book.txt'
-    nodes_doc = '/projects/KB_recommend/test/push/news_nodes.txt'
-    content_doc = '/projects/KB_recommend/test/depot_cut/content_term.txt'
+    event_doc = '/KB_recommend/data/train/news_labels.txt'
+    book = '/KB_recommend/test/train/train_book.txt'
+    nodes_doc = '/KB_recommend/test/forecast/news_nodes.txt'
+    content_doc = '/KB_recommend/test/forecast/content_term.txt'
     #信息获取
     # co = collection_room()
     # st = co.apply_worker('stockman')

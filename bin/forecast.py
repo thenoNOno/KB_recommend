@@ -9,7 +9,7 @@ def main():
 
     """
     #文件路径
-    content_doc = '/projects/KB_recommend/test/forecast/content_term_test.txt'
+    content_doc = '/KB_recommend/test/forecast/content_term_test.txt'
     #信息获取
     co = collection_room()
     st = co.apply_worker('stockman')

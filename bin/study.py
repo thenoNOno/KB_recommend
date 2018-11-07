@@ -218,4 +218,4 @@ def main(event_doc='0', train_book='0'):
         learn(train_book,'0')
 
 if __name__=='''__main__''':
-    main(event_doc='/projects/KB_recommend/test/1_train_0919.txt' ,train_book='/projects/KB_recommend/data/train/train_book.txt')
+    main(event_doc='/KB_recommend/data/train/news_labels.txt', train_book='/KB_recommend/data/train/train_book.txt')

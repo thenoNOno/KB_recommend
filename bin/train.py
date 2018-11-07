@@ -9,9 +9,9 @@ def main():
 
     """
     #文件路径
-    event_doc = '/projects/KB_recommend/data/train/news_labels.txt'
-    content_doc = '/projects/KB_recommend/data/train/content_term_test.txt'
-    book = '/projects/KB_recommend/data/train/train_book.txt'
+    event_doc = '/KB_recommend/data/train/news_labels.txt'
+    content_doc = '/KB_recommend/data/train/content_term_test.txt'
+    book = '/KB_recommend/data/train/train_book.txt'
     #信息获取
     co = collection_room()
     st = co.apply_worker('stockman')

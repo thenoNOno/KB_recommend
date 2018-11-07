@@ -190,18 +190,6 @@ def main():
     程序执行入口
 
     """
-    # content_doc = '/projects/KB_recommend/test/depot/content_term_test.txt'
-    # term_doc = '/projects/KB_recommend/test/depot/content_doc.txt_term.txt'
-    # se = seeding()
-    # terms = se.put_pot(content_doc,'content','term')
-    # print(terms)
-    # cypher = se.store_away(term_doc)
-    # print(cypher)
-    term_doc = '/projects/KB_recommend/test/depot/content_term.txt_term.txt'
-    event_doc = '/projects/KB_recommend/test/train/news_labels.txt'
-    target_doc = '/projects/KB_recommend/test/depot/content_term.txt_event_term.txt'
-    se = seeding()
-    se.get_event(term_doc,event_doc,target_doc)
 
 if __name__=='''__main__''':
     main()

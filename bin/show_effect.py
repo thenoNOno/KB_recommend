@@ -105,11 +105,11 @@ def main():
 
     """
     print('结果集/训练集--------')
-    #l = effect('/projects/KB_recommend/test/1_train_0919.txt','0')
-    l = effect('/projects/KB_recommend/test/1_train_0919.txt','1')
+    #l = effect('/KB_recommend/test/effect/1_train_0919.txt','0')
+    #l = effect('/KB_recommend/test/effect/1_train_0919.txt','1')
     print('结果集/测试集--------')
-    #l = effect('/projects/KB_recommend/test/2_train_0919.txt','0')
-    l = effect('/projects/KB_recommend/test/2_train_0919.txt','1')
+    #l = effect('/KB_recommend/test/effect/2_train_0919.txt','0')
+    #l = effect('/KB_recommend/test/effect/2_train_0919.txt','1')
 
 if __name__=='''__main__''':
     main()
