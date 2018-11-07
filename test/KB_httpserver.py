@@ -137,7 +137,7 @@ def main():
     程序执行入口
 
     """
-    KBR_server(filepath='/usr/local/KB_recommend/data/test/', port=9092)
+    KBR_server(filepath='/usr/local/KB_recommend/test/forecast', port=9092)
 
 if __name__ == "__main__":
     main()
