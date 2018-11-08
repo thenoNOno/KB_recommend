@@ -114,7 +114,7 @@ class learn(object):
                                       ,binary=False
                                       ,total_vec=None)
 
-    def keep(self,save_path):
+    def keep(self, save_path):
         """
         将向量文件整理格式,写入到图谱中
 
@@ -122,10 +122,10 @@ class learn(object):
         #将向量整理为需要的csv格式
         csv_save_path = save_path+'.csv'
         w = writer()
-        w.save_vector_csv(save_path,csv_save_path)
+        w.save_vector_csv(save_path, csv_save_path)
         #将csv中的向量更新到neo4j
-        print('更新向量到neo4j:',datetime.now(),csv_save_path)
-        w.load_vector_neo4j(csv_save_path)
+        print('更新向量到neo4j:', datetime.now(), csv_save_path)
+        w.load_vector_neo4j(csv_save_path, 'mysql')
 
 
 class light(object):

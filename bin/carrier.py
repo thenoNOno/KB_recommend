@@ -4,6 +4,7 @@ from neo4j.v1 import GraphDatabase
 from datetime import datetime
 import pandas as pd
 import numpy as np
+import pymysql
 import json
 import configparser
 import time
@@ -15,6 +16,81 @@ class carrier(object):
     数据操作相关的工具类
 
     """
+    def get_jdbc(self):
+        config = configparser.ConfigParser()
+        config.read("./mysql_link.conf")
+        host = config.get("conf", "host")
+        port = int(config.get("conf", "port"))
+        user = config.get("conf", "user")
+        passwd = config.get("conf", "passwd")
+        db = config.get("conf", "db")
+        charset = config.get("conf", "charset")
+        jdbc = f'''jdbc:mysql://{host}:{port}/{db}?user={user}&password={passwd}&characterEncoding={charset}'''
+        return jdbc
+
+    def get_connect(self):
+        config = configparser.ConfigParser()
+        config.read("./mysql_link.conf")
+        host = config.get("conf", "host")
+        port = int(config.get("conf", "port"))
+        user = config.get("conf", "user")
+        passwd = config.get("conf", "passwd")
+        db = config.get("conf", "db")
+        charset = config.get("conf", "charset")
+        conn = pymysql.connect(
+            host=host
+            ,port=port
+            ,user=user
+            ,passwd=passwd
+            ,db=db
+            ,charset=charset
+        )
+        return conn
+
+    def run_query(self, query):
+        """
+        执行sql语句
+
+        返回可能的查询结果
+        """
+        conn = self.get_connect()
+        cursor = conn.cursor()
+        try:
+            cursor.execute(query)
+            if cursor.description is None:
+                return True
+            else:
+                desc = cursor.description
+            column = []
+            for field in desc:
+                column.append(field[0])
+            results = []
+            results.append(column)
+            results.extend(cursor.fetchall())
+            return results
+        except Exception as error:
+            print("错误信息:", error)
+        finally:
+            cursor.close()
+            conn.commit()
+            conn.close()
+
+    def execute_data(self, sql, data):
+        """
+        批量执行sql,处理数据
+        """
+        conn = self.get_connect()
+        cursor = conn.cursor()
+        try:
+            results = cursor.executemany(sql, data)
+            return results
+        except Exception as error:
+            print("错误信息:", error)
+        finally:
+            cursor.close()          # 关闭cursor
+            conn.commit()           # 提交
+            conn.close()            # 关闭conn
+
     def get_driver(self):
         """
         获取neo4j的session
@@ -148,24 +224,51 @@ class writer(object):
         c.save_csv(dataframe,filename,mode)
         return filename
 
-    def load_vector_neo4j(self,filename):
+    def load_vector_neo4j(self, filename, source='local'):
         """
         将w2v的权重从csv文件更新到neo4j
 
         """
-        vector_data = pd.read_csv(filename, encoding='utf8').to_json(orient='records').replace('"', '')
-        batch = '{batchSize:10000, iterateList:true, parallel:true}'
-        cypher = f'''
-        CALL apoc.periodic.iterate(
-        'UNWIND {vector_data} as row return row'
-        ,'match ()-[r]-() where id(r)=toInteger(row.id) SET r += row'
-        ,{batch}
-        )
-        ;
-        '''
-        c = carrier()
-        c.run_cypher(cypher)
-        return cypher
+        if source == 'local':
+            batch = '{batchSize:10000, iterateList:true, parallel:true}'
+            cypher = f'''
+            CALL apoc.periodic.iterate(
+            'CALL apoc.load.csv("{filename}") yield map as row return row'
+            ,'match ()-[r]-() where id(r)=toInteger(row.id) SET r += row'
+            ,{batch}
+            )
+            ;
+            '''
+            c = carrier()
+            res = c.run_cypher(cypher)
+        elif source == 'mysql':
+            c = carrier()
+            source = c.get_jdbc()
+            timestamp = str(int(time.time()))
+            table = timestamp+'_tmp_rid_norm'
+            drop_sql = f'drop table if exists {table};'
+            create_sql = f'create table {table}(id varchar(256), norm varchar(256));'
+            load_sql = f'insert into {table} values(%s,%s)'
+            data = pd.read_csv(filename, encoding='utf8', dtype='str').values.tolist()
+            sql_0 = c.run_query(drop_sql)
+            sql_1 = c.run_query(create_sql)
+            if sql_0 and sql_1:
+                c.execute_data(load_sql, data)
+                select_sql = f'select * from {table};'
+                batch = '{batchSize:10000, iterateList:true, parallel:true}'
+                cypher = f'''
+                CALL apoc.periodic.iterate(
+                'CALL apoc.load.jdbc("{source}","{select_sql}") YIELD row return row'
+                ,'match ()-[r]-() where id(r)=toInteger(row.id) SET r += row,r.etltime="{timestamp}" '
+                ,{batch}
+                )
+                ;
+                '''
+                c.run_cypher(cypher)
+            res = (table, cypher)
+        else:
+            res = False
+        return res
 
     def make_subfile(self,lines,head,filename,sub):
         """
@@ -191,7 +294,7 @@ class writer(object):
             for line in f:
                 buff.append(line)
                 if len(buff) == count:
-                    subfilename  = name + '_tmp_' + str(sub) + extension
+                    subfilename = name + '_tmp_' + str(sub) + extension
                     sub = self.make_subfile(buff,head,subfilename,sub)
                     buff = []
                     filenames.append(subfilename)
