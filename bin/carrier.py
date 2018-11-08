@@ -115,29 +115,53 @@ class carrier(object):
                 run = tran.run(cypher)
                 return run
 
-    def save_csv(self,dataframe,filename,mode='w',header=True,sep=','):
+    def save_csv(self, dataframe, filename, mode='w', header=True, sep=','):
         """
         将dataframe存储为csv
 
         """
-        dataframe.to_csv(filename,mode=mode,header=header,index=False,sep=sep,encoding='utf8')
+        dataframe.to_csv(filename
+                         ,mode=mode
+                         ,header=header
+                         ,index=False
+                         ,sep=sep
+                         ,encoding='utf8'
+        )
         return filename
 
-    def save_txt(self,lists,filename,mode='a+'):
+    def save_txt(self, lists, filename, mode='a+'):
         """
         打开文件,写入数据
 
         """
-        with open(filename,mode,encoding='utf8') as f:
+        with open(filename, mode, encoding='utf8') as f:
             for line in lists:
                 f.write(line)
+
+    def scan_files(self, filepath, suffix):
+        """
+        根据路径与脚本后缀,扫描脚本
+
+        """
+        filelist = []
+        print("开始扫描:'{0}'".format(filepath))
+        try:
+            for filename in os.listdir(filepath):
+                if os.path.isdir(filepath + "/" + filename):
+                    filelist.extend(self.scan_files(filepath + "/" + filename, suffix))
+                else:
+                    if filename.endswith(suffix):
+                        filelist.append((filepath + "/" + filename))
+            return filelist
+        except Exception as error:
+            print("错误信息:", error)
+
 
 class writer(object):
     """
     数据写出相关的类
 
     """
-
     def save_data_csv(self,cypher,filename,mode='a',header=True):
         """
         执行cypher查询并存储为csv
@@ -276,11 +300,14 @@ class writer(object):
 
         """
         with open(filename,'w',encoding='utf8') as f:
-            f.writelines([head])
+            if head != '':
+                f.writelines([head])
+            else:
+                pass
             f.writelines(lines)
             return sub + 1
 
-    def split_count(self,filename,count):
+    def split_count(self,filename,count,header=True):
         """
         根据行数切分文件
 
@@ -288,7 +315,12 @@ class writer(object):
         [name,extension] = os.path.splitext(filename)
         filenames = []
         with open(filename,'r',encoding='utf8') as f:
-            head = f.readline()
+            if header == True:
+                head = f.readline()
+            elif header == False:
+                head = ''
+            else:
+                head = header
             buff = []
             sub = 0
             for line in f:
@@ -337,6 +369,19 @@ class writer(object):
             pass
         return data
 
+    def merge_csv(self, file_list, target_file, columns, mode='w'):
+        if mode == 'a' and os.path.exists(target_file):
+            header = False
+        else:
+            header = True
+        data = pd.DataFrame(columns=columns)
+        for line in file_list:
+            file_data = pd.read_table(line, sep=",", encoding='utf8', dtype='str')
+            data = data.append(file_data, ignore_index=True)
+        c = carrier()
+        c.save_csv(data, target_file ,mode , header=header)
+        return target_file
+
 
 class rule(object):
     """
@@ -353,23 +398,41 @@ class rule(object):
         else:
             pass
 
-    def path_exists(self,filename):
+    def path_exists(self, filename):
         if os.path.exists(filename):
             return True
         else:
-            print('文件不存在:',filename)
+            print('文件不存在:', filename)
 
-    def line_qualifier(self,line,qualifier='"',separator=',',column_separator=' '):
-        line = ''+qualifier+line.replace(qualifier,'').replace(separator,'","').replace(column_separator,'" "')+qualifier
+    def line_qualifier(self, line ,qualifier='"' ,separator=',' ,column_separator=' '):
+        line = ''+qualifier+line.replace(qualifier, '').replace(separator, '","').replace(column_separator, '" "')+qualifier
         return line
 
+    def make_plan(self, timestamp, filepath, flag, suffix):
+        c = carrier()
+        todo_list = []
+        files = c.scan_files(filepath, suffix)
+        for line in files:
+            name = os.path.basename(line)
+            name_list = name.split('_', 1)
+            sub_name = name_list[0]
+            flag_name = name_list[1]
+            batch = re.sub('[^0-9]', '', sub_name)
+            if batch != '' and flag == flag_name:
+                batch = int(batch)
+                if batch < timestamp-1:
+                    todo_list.append(line)
+                else:
+                    pass
+            else:
+                pass
+        return todo_list
 
 def main():
     """
     程序执行入口
 
-    测试用
     """
 
-if __name__=='''__main__''':
+if __name__ == '''__main__''':
     main()

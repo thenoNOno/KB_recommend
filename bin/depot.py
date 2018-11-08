@@ -25,7 +25,6 @@ class seeding(object):
         dict_term_df.set_index('term',drop=False,inplace=True)
         #分词,取term
         with open(filename,'r',encoding='utf8') as f:
-            next(f)
             for line in f:
                 line = re.sub('(\")','',line)
                 columns = str(line).replace('\t',' ').split(' ',1)
@@ -134,7 +133,6 @@ class seeding(object):
         dict_term_df.set_index('term',drop=False,inplace=True)
         #开始分词,取term
         with open(filename,'r',encoding='utf8') as f:
-            next(f)
             for line in f:
                 line = re.sub('(\")','',line)
                 columns = str(line).replace('\t',' ').split(' ',1)

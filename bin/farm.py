@@ -88,12 +88,12 @@ class cleaner(worker):
     def __init__(self):
         pass
 
-    def run(self,filename):
-        delete_flag = '_tmp_'
+    def run(self, filename, delete_flag='_tmp_'):
+        delete_flag = delete_flag
         #remove_flag = '.remove'
         cleaned_docs = []
         filelist = []
-        path,file=os.path.split(filename)
+        path, file = os.path.split(filename)
         for root, dirs, files in os.walk(path,topdown=False):
             filelist = files
         for doc in files:
@@ -103,7 +103,7 @@ class cleaner(worker):
                     os.remove(filename)
                     cleaned_docs.append(filename)
                 except Exception:
-                    print('文件未清理:',filename)
+                    print('文件未清理:', filename)
                 else:
                     pass
             else:
@@ -111,7 +111,7 @@ class cleaner(worker):
         self.cleaned_docs = cleaned_docs
         self.docs = cleaned_docs
 
-    def collect(self,doc):
+    def collect(self, doc):
         pass
 
     def save(self):
@@ -157,39 +157,39 @@ class sorter(worker):
     def __init__(self):
         pass
 
-    def run(self,event_doc,batch='10'):
-        count = self.collect(event_doc,batch)
-        event_docs = self.save(event_doc,count)
+    def run(self, event_doc, header=True, batch='5'):
+        count = self.collect(event_doc, batch)
+        event_docs = self.save(event_doc, count, header)
         self.event_docs = event_docs
         self.docs = event_docs
 
-    def collect(self,filename,batch):
+    def collect(self, filename, batch):
         """
         根据需要batch,计算数据集行数
 
         """
         batch_size = int(batch)-1
-        if batch_size<1:
+        if batch_size < 1:
             batch_size = 1
         else:
             pass
         line_count = -1
-        with open(filename,'r',encoding='utf8') as f:
-            for line_count,line in enumerate(f):
+        with open(filename, 'r', encoding='utf8') as f:
+            for line_count, line in enumerate(f):
                 pass
         line_count = line_count+1
         count = line_count//batch_size
-        if count<2:
-            count = 2
+        if count < 1:
+            count = 1
         return count
 
-    def save(self,event_doc,count):
+    def save(self, event_doc, count, header):
         """
         保存数据集
 
         """
         w = writer()
-        event_docs = w.split_count(event_doc,count)
+        event_docs = w.split_count(event_doc, count, header)
         return event_docs
 
 
@@ -283,41 +283,36 @@ class judge(worker):
     def __init__(self):
         pass
 
-    def run(self,nodes_doc,label_end,path_length='2'):
-        chances_doc = self.save(nodes_doc,label_end,path_length)
+    def run(self, nodes_doc, target_doc, label_end, path_length='1'):
+        chances_doc = self.save(nodes_doc, target_doc, label_end, path_length)
         self.chances_doc = chances_doc
         self.docs = chances_doc
 
-    def collect(self,doc,label_end,path_length,sorter='sorter',worker='rater'):
-        print('\n整理任务:',datetime.now())
+    def collect(self, doc, label_end, path_length, sorter='sorter', worker='rater'):
+        print('\n整理任务:', datetime.now())
         co = collection_room()
-        nodes_docs = co.subtask(sorter,doc)
+        nodes_docs = co.subtask(sorter, doc)
         workload = len(nodes_docs)
-        print('任务量:',workload,'\n任务列表:',nodes_docs)
-        print('开始任务:',datetime.now())
-        nodes_docs = co.taskbar(worker,nodes_docs,'1',workload,label_end=label_end,path_length=path_length)
-        print('任务结束:',datetime.now())
+        print('任务量:', workload, '\n任务列表:', nodes_docs)
+        print('开始任务:', datetime.now())
+        nodes_docs = co.taskbar(worker, nodes_docs, '1', workload, label_end=label_end, path_length=path_length)
+        print('任务结束:', datetime.now())
         return nodes_docs
 
-    def save(self,nodes_doc,label_end,path_length):
+    def save(self, nodes_doc, target_doc, label_end, path_length):
         """
         保存数据集
 
         """
-        nodes_docs = self.collect(nodes_doc,label_end,path_length)
-        chances = pd.DataFrame(columns=['pid','node','node_end','n_e','distance','mass','chance','length'])
-        all_chances_doc = nodes_doc+'_chances.txt'
-        for nodes_doc in nodes_docs:
-            chances_doc = nodes_doc+'_chances.txt'
-            chance = pd.read_table(chances_doc,sep=",",encoding='utf8',dtype='str')
-            if chance.empty:
-                print('有chance为空',datetime.now())
-                pass
-            else:
-                chances = chances.append(chance,ignore_index=True)
-        c = carrier()
-        c.save_csv(chances,all_chances_doc)
-        return all_chances_doc
+        nodes_docs = self.collect(nodes_doc, label_end, path_length)
+        chances_docs = []
+        for line in nodes_docs:
+            chances_doc = line+'_chances.txt'
+            chances_docs.append(chances_doc)
+        columns = ['pid','node','node_end','n_e','distance','mass','chance','length']
+        w = writer()
+        target_doc = w.merge_csv(chances_docs, target_doc, columns)
+        return target_doc
 
 
 class hamaul(worker):
@@ -376,20 +371,22 @@ class stockman(worker):
             self.docs = event_doc
         self.term_doc = term_doc
 
-    def collect(self,content_doc,sorter='sorter',worker='hamaul'):
+    def collect(self, content_doc, sorter='sorter', worker='hamaul'):
         term_doc = content_doc+'_term.txt'
         #创建空的term_doc,写入列名
-        with open(term_doc,'w',encoding='utf8') as f:
-            f.write('pid term\n')
+        term_head = 'pid term\n'
+        with open(term_doc, 'w', encoding='utf8') as f:
+            f.write(term_head)
         #开始任务
-        print('\n整理任务:',datetime.now())
+        print('\n整理任务:', datetime.now())
         co = collection_room()
-        content_docs = co.subtask(sorter,content_doc,batch='100')
+        content_head = 'pid content\n'
+        content_docs = co.subtask(sorter, content_doc, header=content_head, batch='100')
         workload = len(content_docs)
-        print('任务量:',workload,'\n任务列表:',content_docs)
-        print('开始任务:',datetime.now())
-        content_docs = co.taskbar(worker,content_docs,term_doc,workload)
-        print('任务结束:',datetime.now())
+        print('任务量:', workload, '\n任务列表:', content_docs)
+        print('开始任务:', datetime.now())
+        content_docs = co.taskbar(worker, content_docs, term_doc, workload)
+        print('任务结束:', datetime.now())
         return term_doc
 
     def save(self,term_doc,event_doc,target_doc):
@@ -438,5 +435,5 @@ def main():
     # co.subtask('cleaner',content_doc)
 
 
-if __name__=='''__main__''':
+if __name__ == '''__main__''':
     main()
