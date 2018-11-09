@@ -412,6 +412,10 @@ class rule(object):
         c = carrier()
         todo_list = []
         files = c.scan_files(filepath, suffix)
+        if files:
+            pass
+        else:
+            return todo_list
         for line in files:
             name = os.path.basename(line)
             name_list = name.split('_', 1)

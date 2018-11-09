@@ -67,7 +67,7 @@ class KBR_server():
             code = 403
             status = "FALSE"
         message = {'code':code, 'type':status, 'res':res}
-        json_str = json.dumps(message)
+        json_str = json.dumps(message, ensure_ascii=False)
         return json_str
 
     @app.route("/api/KB_recommend/search_value", methods=['POST'])
@@ -89,7 +89,7 @@ class KBR_server():
             code = 403
             status = "FALSE"
         message = {'code':code, 'type':status}
-        json_str = json.dumps(message)
+        json_str = json.dumps(message, ensure_ascii=False)
         return json_str
 
 
@@ -137,7 +137,8 @@ def main():
     程序执行入口
 
     """
-    KBR_server(filepath='/usr/local/KB_recommend/test/forecast/', port=9092)
+    KBR_server(filepath='/KB_recommend/test/forecast/', port=9092)
+    #KBR_server(filepath='/usr/local/KB_recommend/test/forecast/', port=9092)
 
 if __name__ == "__main__":
-    main()
+main()

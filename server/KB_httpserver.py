@@ -65,7 +65,7 @@ class KBR_server():
             code = 403
             status = "FALSE"
         message = {'code':code, 'type':status, 'res':res}
-        json_str = json.dumps(message)
+        json_str = json.dumps(message, ensure_ascii=False)
         return json_str
 
     @app.route("/api/KB_recommend/search_value", methods=['POST'])
@@ -87,7 +87,7 @@ class KBR_server():
             code = 403
             status = "FALSE"
         message = {'code':code, 'type':status}
-        json_str = json.dumps(message)
+        json_str = json.dumps(message, ensure_ascii=False)
         return json_str
 
 
