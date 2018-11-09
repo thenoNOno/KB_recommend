@@ -79,7 +79,7 @@ def main():
     程序执行入口
 
     """
-    fo = forecast('/usr/local/KB_recommend/test/forecast')
+    fo = forecast('/usr/local/KB_recommend/data/forecast')
     chances_docs = fo.run()
     print(chances_docs)
 
