@@ -5,6 +5,8 @@ from gevent.pywsgi import WSGIServer
 from flask import request
 from flask import Flask
 from datetime import datetime
+from gevent import monkey; monkey.patch_all()
+import gevent
 import os
 import time
 import json
@@ -54,11 +56,11 @@ class KBR_server():
             # 服务的数据处理路径
             do = do_event(SERVER_FILEPATH)
             batch = str(int(time.time()))
-            do.put_content(pid, content, batch)
-            res = False
-            while not res:
-                res = do.get_value(pid, batch)
-                time.sleep(5)
+            gev_put = gevent.spawn(do.put_content, pid, content, batch)
+            gev_get = gevent.spawn(do.wait_value, pid, batch)
+            gev_put.join()
+            gev_get.join()
+            res = gev_get.get()
             code = 200
             status = 'SUCCESS'
         except ValueError:
@@ -127,6 +129,13 @@ class do_event():
         value_data.set_index('pid', drop=False, inplace=True)
         value_data = value_data.loc[value_data.pid==line]
         res = value_data[['pid', 'chance', 'full_name', 'node']].to_dict(orient='records')
+        return res
+
+    def wait_value(self, pid, batch):
+        res = False
+        while not res:
+            res = self.get_value(pid, batch)
+            time.sleep(5)
         return res
 
 
