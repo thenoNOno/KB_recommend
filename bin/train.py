@@ -5,10 +5,14 @@ from farm import *
 
 class train():
     """
-    对数据进行预测
+    训练模型权重
 
     """
     def __init__(self, content_doc, event_doc, book):
+        """
+        初始化路径参数
+
+        """
         self.content_doc = content_doc
         self.event_doc = event_doc
         self.book = book
@@ -16,7 +20,10 @@ class train():
         print(self.filepath)
 
     def cast(self, content_doc, event_doc, book):
-        #文件路径
+        """
+        训练模型
+
+        """
         content_doc = content_doc
         event_doc = event_doc
         book = book
@@ -46,6 +53,10 @@ class train():
         co.subtask('cleaner', clean_place, '_term.txt')
 
     def run(self):
+        """
+        执行
+
+        """
         lock = self.filepath+'/__tmp__'
         todo_place = os.path.exists(self.filepath)
         todo_lock = os.path.exists(lock)
