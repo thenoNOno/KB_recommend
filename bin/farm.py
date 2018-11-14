@@ -14,7 +14,7 @@ class collection_room(object):
     def __init__(self):
         pass
 
-    def apply_worker(self,worker):
+    def apply_worker(self, worker):
         if worker == 'farmer':
             return farmer()
         elif worker == 'sorter':
@@ -29,6 +29,8 @@ class collection_room(object):
             return cleaner()
         elif worker == 'hamaul':
             return hamaul()
+        elif worker == 'packer':
+            return packer()
         elif worker == 'stockman':
             return stockman()
         else:
@@ -317,39 +319,54 @@ class judge(worker):
 
 class hamaul(worker):
     """
-    生成关系数据到事件集,或导入图谱
+    生成关系数据,用来产生事件集
 
-    处理大规模数据时,使用mode1导入图谱会遇到瓶颈
     """
     def __init__(self):
         pass
 
-    def run(self,content_doc,term_doc,mode='0'):
-        label = 'content'
-        label_end = 'term'
-        if mode == '0':
-            term_doc = self.collect(content_doc,term_doc)
-        elif mode == '1':
-            term_doc = self.save(content_doc,term_doc,label,label_end)
-        else:
-            pass
+    def run(self, content_doc, term_doc):
+        term_doc = self.collect(content_doc, term_doc)
         self.term_doc = term_doc
         self.docs = term_doc
 
-    def collect(self,content_doc,term_doc):
+    def collect(self, content_doc, term_doc):
         se = seeding()
-        term_doc = se.get_term(content_doc,term_doc)
+        term_doc = se.get_term(content_doc, term_doc)
         return term_doc
 
-    def save(self,content_doc,term_doc,label,label_end):
+    def save(self):
         """
         保存terms数据集
 
         """
+        pass
+
+
+class packer(worker):
+    """
+    生成关系数据,用来导入图谱
+
+    """
+    def __init__(self):
+        pass
+
+    def run(self, content_doc, term_doc):
+        term_doc = self.collect(content_doc, term_doc)
+        self.term_doc = term_doc
+        self.docs = term_doc
+
+    def collect(self, content_doc, term_doc):
         se = seeding()
-        term_doc = se.put_pot(content_doc,term_doc,label,label_end)
+        term_doc = se.get_full_term(content_doc, term_doc)
         return term_doc
 
+    def save(self):
+        """
+        保存terms数据集
+
+        """
+        pass
 
 class stockman(worker):
     """
@@ -360,18 +377,24 @@ class stockman(worker):
     def __init__(self):
         pass
 
-    def run(self,content_doc,event_doc='0'):
-        term_doc = self.collect(content_doc)
+    def run(self, content_doc, event_doc='0', worker='hamaul', source='0'):
+        term_doc = self.collect(content_doc, worker)
         if event_doc == '0':
             self.docs = term_doc
         else:
             target_doc = content_doc+'_event_term.txt'
-            event_doc = self.save(term_doc,event_doc,target_doc)
+            event_doc = self.save(term_doc, event_doc, target_doc)
             self.event_doc = event_doc
             self.docs = event_doc
+        if source!='0':
+            se = seeding()
+            res = se.store_away(term_doc, source)
+            print('content_term已导入图谱')
+        else:
+            pass
         self.term_doc = term_doc
 
-    def collect(self, content_doc, sorter='sorter', worker='hamaul'):
+    def collect(self, content_doc,  worker, sorter='sorter'):
         term_doc = content_doc+'_term.txt'
         #创建空的term_doc,写入列名
         term_head = 'pid term\n'
@@ -389,16 +412,14 @@ class stockman(worker):
         print('任务结束:', datetime.now())
         return term_doc
 
-    def save(self,term_doc,event_doc,target_doc):
+    def save(self, term_doc, event_doc, target_doc):
         """
         保存事件集
 
         """
-        # 保存到图谱
-        # se = seeding()
-        # se.store_away(term_doc)
+        #整合为事件集文件
         se = seeding()
-        target_doc = se.get_event(term_doc,event_doc,target_doc)
+        target_doc = se.get_event(term_doc, event_doc, target_doc)
         return target_doc
 
 

@@ -294,6 +294,65 @@ class writer(object):
             res = False
         return res
 
+    def load_term_neo4j(self, filename, label, label_end, source='local'):
+        """
+        """
+        filename = filename
+        label = label
+        label_end = label_end
+        check = '{'+f'''pid:row.{label}'''+'}'
+        check_e = '{'+f'''pid:row.{label_end}'''+'}'
+        check_n = '{'+f'''pid:row.{label_end}'''+'}'
+        if source == 'local':
+            batch = '{batchSize:10000, iterateList:false, parallel:false}'
+            cypher = f'''
+            CALL apoc.periodic.iterate(
+            'CALL apoc.load.csv("{filename}") yield map as row return row'
+            ,'merge (n:outside:{label} {check}) with *
+            merge (n_e:outside:{label_end} {check_e}) with *
+            merge (n_n:outside:entity {check_n}) with *
+            merge (n)-[r:watching]->(n_e)-[:watching]->(n_n)
+            set r.freq = coalesce(r.freq,0)+1 '
+            ,{batch}
+            )
+            ;
+            '''
+            print(cypher)
+            c = carrier()
+            res = c.run_cypher(cypher)
+        elif source == 'mysql':
+            c = carrier()
+            source = c.get_jdbc()
+            timestamp = str(int(time.time()))
+            table = timestamp+'_tmp_rid_norm'
+            drop_sql = f'drop table if exists {table};'
+            create_sql = f'create table {table}({label} varchar(2000), {label_end} varchar(2000));'
+            load_sql = f'insert into {table} values(%s,%s)'
+            data = pd.read_csv(filename, encoding='utf8', dtype='str').values.tolist()
+            sql_0 = c.run_query(drop_sql)
+            sql_1 = c.run_query(create_sql)
+            if sql_0 and sql_1:
+                c.execute_data(load_sql, data)
+                select_sql = f'select * from {table};'
+                batch = '{batchSize:10000, iterateList:true, parallel:true}'
+                cypher = f'''
+                CALL apoc.periodic.iterate(
+                'CALL apoc.load.csv("{filename}") yield map as row return row'
+                ,'merge (n:outside:{label} {check}) with *
+                merge (n_e:outside:{label_end} {check_e}) with *
+                merge (n_n:outside:entity {check_n}) with *
+                merge (n)-[r:watching]->(n_e)-[:watching]->(n_n)
+                set r.freq = coalesce(r.freq,0)+1 '
+                ,{batch}
+                )
+                ;
+                '''
+                c.run_cypher(cypher)
+            res = (table, cypher)
+        else:
+            res = False
+        return res
+
     def make_subfile(self,lines,head,filename,sub):
         """
         保存子文件
@@ -321,6 +380,7 @@ class writer(object):
                 head = ''
             else:
                 head = header
+                next(f)
             buff = []
             sub = 0
             for line in f:
