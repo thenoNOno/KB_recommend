@@ -203,26 +203,26 @@ class learner(worker):
     def __init__(self):
         pass
 
-    def run(self,doc,book,model_path='1'):
-        learn = self.save(doc,book,model_path)
+    def run(self, doc, book, model_path='1', path_length='2'):
+        learn = self.save(doc, book, model_path, path_length)
         self.book = book
         self.model_path = learn.model_path
         self.save_path = learn.save_path
         self.save_model_path = learn.save_model_path
 
-    def collect(self,doc,sorter='sorter',worker='farmer'):
-        print('\n整理任务:',datetime.now())
+    def collect(self, doc, path_length, sorter='sorter', worker='farmer'):
+        print('\n整理任务:', datetime.now())
         co = collection_room()
-        event_docs = co.subtask(sorter,doc)
+        event_docs = co.subtask(sorter, doc)
         workload = len(event_docs)
-        print('任务量:',workload,'\n任务列表:',event_docs)
-        print('开始任务:',datetime.now())
-        train_docs = co.taskbar(worker,event_docs,'1',workload)
-        print('任务结束:',datetime.now())
+        print('任务量:', workload, '\n任务列表:', event_docs)
+        print('开始任务:', datetime.now())
+        train_docs = co.taskbar(worker, event_docs, '1', workload, path_length=path_length)
+        print('任务结束:', datetime.now())
         return train_docs
 
-    def save(self,doc,book,model_path):
-        event_docs = self.collect(doc,'sorter','farmer')
+    def save(self, doc, book, model_path, path_length):
+        event_docs = self.collect(doc, path_length)
         trains = []
         for event_doc in event_docs:
             train_doc = event_doc+'_doc.txt'
@@ -232,8 +232,8 @@ class learner(worker):
         ru = rule()
         ru.soft_remove(book)
         c = carrier()
-        c.save_txt(trains,book)
-        le = learn(book,model_path)
+        c.save_txt(trains, book)
+        le = learn(book, model_path)
         return le
 
 

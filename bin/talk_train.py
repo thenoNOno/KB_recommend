@@ -34,7 +34,7 @@ class train():
         #并行训练
         co = collection_room()
         le = co.apply_worker('learner')
-        le.run(event_doc, book, model_path='0')
+        le.run(event_doc, book, model_path='0', path_length='5')
         learn_doc = (le.book, le.model_path, le.save_model_path, le.save_path)
         return learn_doc
 
@@ -64,7 +64,7 @@ class train():
         else:
             return 'donothing'
         learn_doc = self.cast(self.content_doc, self.event_doc, self.book)
-        #self.clean()
+        self.clean()
         return learn_doc
 
 def main():

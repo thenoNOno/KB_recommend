@@ -317,7 +317,7 @@ class writer(object):
             )
             ;
             '''
-            print(cypher)
+            #print(cypher)
             c = carrier()
             res = c.run_cypher(cypher)
         elif source == 'mysql':
