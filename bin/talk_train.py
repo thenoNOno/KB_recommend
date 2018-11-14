@@ -30,7 +30,7 @@ class train():
         #信息存入图谱
         co = collection_room()
         st = co.apply_worker('stockman')
-        st.run(content_doc=content_doc, worker='packer', source='local')
+        st.run(content_doc=content_doc, worker='packer', mode='line', source='local')
         #并行训练
         co = collection_room()
         le = co.apply_worker('learner')

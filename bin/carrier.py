@@ -380,7 +380,6 @@ class writer(object):
                 head = ''
             else:
                 head = header
-                next(f)
             buff = []
             sub = 0
             for line in f:

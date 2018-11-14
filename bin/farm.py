@@ -325,7 +325,7 @@ class hamaul(worker):
     def __init__(self):
         pass
 
-    def run(self, content_doc, term_doc):
+    def run(self, content_doc, term_doc, mode='list'):
         term_doc = self.collect(content_doc, term_doc)
         self.term_doc = term_doc
         self.docs = term_doc
@@ -351,14 +351,19 @@ class packer(worker):
     def __init__(self):
         pass
 
-    def run(self, content_doc, term_doc):
-        term_doc = self.collect(content_doc, term_doc)
+    def run(self, content_doc, term_doc, mode='list'):
+        term_doc = self.collect(content_doc, term_doc, mode)
         self.term_doc = term_doc
         self.docs = term_doc
 
-    def collect(self, content_doc, term_doc):
+    def collect(self, content_doc, term_doc, mode):
         se = seeding()
-        term_doc = se.get_full_term(content_doc, term_doc)
+        if mode == 'line':
+            term_doc = se.get_full_line_term(content_doc, term_doc)
+        elif mode == 'list':
+            term_doc = se.get_full_list_term(content_doc, term_doc)
+        else:
+            pass
         return term_doc
 
     def save(self):
@@ -377,8 +382,8 @@ class stockman(worker):
     def __init__(self):
         pass
 
-    def run(self, content_doc, event_doc='0', worker='hamaul', source='0'):
-        term_doc = self.collect(content_doc, worker)
+    def run(self, content_doc, event_doc='0', worker='hamaul', mode='list', source='0'):
+        term_doc = self.collect(content_doc, worker, mode)
         if event_doc == '0':
             self.docs = term_doc
         else:
@@ -394,7 +399,7 @@ class stockman(worker):
             pass
         self.term_doc = term_doc
 
-    def collect(self, content_doc,  worker, sorter='sorter'):
+    def collect(self, content_doc,  worker, mode, sorter='sorter'):
         term_doc = content_doc+'_term.txt'
         #创建空的term_doc,写入列名
         term_head = 'pid term\n'
@@ -408,7 +413,7 @@ class stockman(worker):
         workload = len(content_docs)
         print('任务量:', workload, '\n任务列表:', content_docs)
         print('开始任务:', datetime.now())
-        content_docs = co.taskbar(worker, content_docs, term_doc, workload)
+        content_docs = co.taskbar(worker, content_docs, term_doc, workload, mode=mode)
         print('任务结束:', datetime.now())
         return term_doc
 

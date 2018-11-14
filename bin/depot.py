@@ -54,43 +54,6 @@ class seeding(object):
         c.save_txt(err_content,err_doc)
         return target_doc
 
-    def get_full_term(self, filename, target_doc):
-        c = carrier()
-        w = writer()
-        err_doc = target_doc+'_err_.txt'
-        data = []
-        err_cn = 0
-        err_content = []
-        #开始分词,取term
-        with open(filename, 'r', encoding='utf8') as f:
-            next(f)
-            for line in f:
-                line = re.sub('(\")', '', line)
-                columns = str(line).replace('\t', ' ').replace('\n', '').split(' ', 1)
-                try:
-                    pid = columns[0]
-                    content = columns[1]
-                except:
-                    err_cn = err_cn+1
-                    err_content.append(str(columns))
-                tmp_cut_content = jieba.cut(content, cut_all=False, HMM=True)
-                cut_content = list(set(tmp_cut_content))
-                #拼接pid,term
-                if len(cut_content) > 0:
-                    flag = '\n'+pid+' '
-                    word_line = pid+' '+flag.join(cut_content)+'\n'
-                    data.append(word_line)
-                else:
-                    pass
-                # 批量写出,防止分词占用内存过多
-                data = w.save_txt_batch(data, target_doc, 100)
-        if len(data) != 0:
-            c.save_txt(data, target_doc)
-        else:
-            pass
-        c.save_txt(err_content, err_doc)
-        return target_doc
-
     def store_away(self, filename, source):
         """
         将类拆分子类的结果写入知识图谱
@@ -150,6 +113,80 @@ class seeding(object):
                     pass
                 # 批量写出,防止分词占用内存过多
                 data = w.save_txt_batch(data,target_doc,100)
+        if len(data) != 0:
+            c.save_txt(data, target_doc)
+        else:
+            pass
+        c.save_txt(err_content, err_doc)
+        return target_doc
+
+    def get_full_line_term(self, filename, target_doc):
+        c = carrier()
+        w = writer()
+        err_doc = target_doc+'_err_.txt'
+        data = []
+        err_cn = 0
+        err_content = []
+        #开始分词,取term
+        with open(filename, 'r', encoding='utf8') as f:
+            next(f)
+            for line in f:
+                line = re.sub('(\")', '', line)
+                columns = str(line).replace('\t', ' ').replace('\n', '').split(' ', 1)
+                try:
+                    pid = columns[0]
+                    content = columns[1]
+                except:
+                    err_cn = err_cn+1
+                    err_content.append(str(columns))
+                tmp_cut_content = jieba.cut(content, cut_all=False, HMM=True)
+                cut_content = list(set(tmp_cut_content))
+                #拼接pid,term
+                if len(cut_content) > 0:
+                    flag = '\n'+pid+' '
+                    word_line = pid+' '+flag.join(cut_content)+'\n'
+                    data.append(word_line)
+                else:
+                    pass
+                # 批量写出,防止分词占用内存过多
+                data = w.save_txt_batch(data, target_doc, 100)
+        if len(data) != 0:
+            c.save_txt(data, target_doc)
+        else:
+            pass
+        c.save_txt(err_content, err_doc)
+        return target_doc
+
+    def get_full_list_term(self, filename, target_doc):
+        c = carrier()
+        w = writer()
+        err_doc = target_doc+'_err_.txt'
+        data = []
+        err_cn = 0
+        err_content = []
+        #开始分词,取term
+        with open(filename, 'r', encoding='utf8') as f:
+            next(f)
+            for line in f:
+                line = re.sub('(\")', '', line)
+                columns = str(line).replace('\t', ' ').replace('\n', '').split(' ', 1)
+                try:
+                    pid = columns[0]
+                    content = columns[1]
+                except:
+                    err_cn = err_cn+1
+                    err_content.append(str(columns))
+                tmp_cut_content = jieba.cut(content, cut_all=False, HMM=True)
+                cut_content = list(set(tmp_cut_content))
+                if len(cut_content) > 0:
+                    flag = ','
+                    flag_line = flag.join(cut_content)
+                    word_line = pid+' '+flag_line+'\n'
+                    data.append(word_line)
+                else:
+                    pass
+                # 批量写出,防止分词占用内存过多
+                data = w.save_txt_batch(data, target_doc, 100)
         if len(data) != 0:
             c.save_txt(data, target_doc)
         else:
