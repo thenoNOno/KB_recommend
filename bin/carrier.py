@@ -271,7 +271,7 @@ class writer(object):
             timestamp = str(int(time.time()))
             table = timestamp+'_tmp_rid_norm'
             drop_sql = f'drop table if exists {table};'
-            create_sql = f'create table {table}(id varchar(256), norm varchar(256));'
+            create_sql = f'create table {table}(id varchar(256), norm double);'
             load_sql = f'insert into {table} values(%s,%s)'
             data = pd.read_csv(filename, encoding='utf8', dtype='str').values.tolist()
             sql_0 = c.run_query(drop_sql)

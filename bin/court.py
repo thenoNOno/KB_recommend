@@ -42,26 +42,25 @@ order by mass desc
         batch = batch
         #filt = f''' id(n)=toInteger('{node}') '''
         filt = f''' n.pid in [{node}] '''
-        # cypher = f'''
+        cypher = f'''match p=(n:outside)-[*0..{path_length}]-(n_e:{label_end})
+        where {filt}
+        with *,extract(x IN relationships(p)|(100.0-toFloat(coalesce(x.norm,0.0)))) as distances
+        return distinct
+        n_e.full_name as full_name
+        ,{pid} as pid,n.pid as node,n_e.pid as node_end,id(n_e) as n_e,sqrt(sum(coalesce(distances[0],0.0)^2+coalesce(distances[1],0.0)^2+coalesce(distances[2],0.0)^2+coalesce(distances[3],0.0)^2)) as distance,length(p) as length
+        order by distance asc
+        limit {batch}
+        '''
+#         cypher = f'''
 # match p=(n:outside)-[*0..{path_length}]-(n_e:{label_end})
 # where {filt}
 # with *,extract(x IN relationships(p)|(100.0-toFloat(coalesce(x.norm,0.0)))) as distances
 # return distinct
 # n_e.full_name as full_name
-# ,{pid} as pid,n.pid as node,n_e.pid as node_end,id(n_e) as n_e,sqrt(sum(coalesce(distances[0],0.0)^2+coalesce(distances[1],0.0)^2+coalesce(distances[2],0.0)^2+coalesce(distances[3],0.0)^2)) as distance,length(p) as length
+# ,{pid} as pid,n_e.pid as node_end,id(n_e) as n_e,sqrt(sum(coalesce(distances[0],0.0)^2+coalesce(distances[1],0.0)^2+coalesce(distances[2],0.0)^2+coalesce(distances[3],0.0)^2)) as distance,length(p) as length
 # order by distance asc
 # limit {batch}
 #         '''
-        cypher = f'''
-match p=(n:outside)-[*0..{path_length}]-(n_e:{label_end})
-where {filt}
-with *,extract(x IN relationships(p)|(100.0-toFloat(coalesce(x.norm,0.0)))) as distances
-return distinct
-n_e.full_name as full_name
-,{pid} as pid,n_e.pid as node_end,id(n_e) as n_e,sqrt(sum(coalesce(distances[0],0.0)^2+coalesce(distances[1],0.0)^2+coalesce(distances[2],0.0)^2+coalesce(distances[3],0.0)^2)) as distance,length(p) as length
-order by distance asc
-limit {batch}
-        '''
         #print(cypher)
         c = carrier()
         data = c.run_cypher(cypher).data()
@@ -107,11 +106,51 @@ limit {batch}
         return chances
 
 
+class snap_algo():
+    """
+    算法优化
+
+    """
+    def fall_next(self, node, batch, label_end):
+        cypher = f'''match (n)-[r]-(n_e:{label_end})
+        where id(n) in {node}
+        return id(n_e) as n_e, n_e.mass as mass, r.norm as norm
+        order by n_e.mass desc
+        limit {batch}
+        '''
+        c = carrier()
+        data = c.run_cypher(cypher).data()
+        dataframe = pd.DataFrame(data)
+        return dataframe
+
+    def fall_step(self, node, batch, path_length, label_end):
+        step = 0
+        tmp_node = node
+        path = pd.DataFrame(columns=['n_e','mass','norm','step'])
+        while step < path_length:
+            tmp_label_end = label_end[step]
+            tmp_path = self.fall_next(tmp_node, batch, tmp_label_end)
+            tmp_path['step'] = step
+            tmp_node = list(tmp_path['n_e'])
+            step = step+1
+        path = path.append(tmp_path, ignore_index=True)
+        return path
+
+    def fall_label(self, node, batch, path_length, label_end):
+        path = self.fall_step(node, batch, path_length, label_end)
+        nodes = list(set(list(path['n_e'])))
+        return nodes
+
+
 def main():
     """
     程序执行入口
 
     """
+    # node = [854815]
+    # sn = snap_algo()
+    # res = sn.fall_label(node, 5, 3, ['entity','entity','term'])
+    # print(res)
 
 if __name__=='''__main__''':
     main()

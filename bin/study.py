@@ -45,6 +45,8 @@ class learn(object):
         else:
             raise ValueError('模型路径错误')
         self.keep(save_path)
+        summing = summing_up()
+        summing.compute()
         print('图谱已更新:',datetime.now(),'\n模型路径:',save_model_path)
         #实例属性
         self.train_doc = train_doc
@@ -194,13 +196,29 @@ class light(object):
         filt = f''' n.pid in [{node}] and n_m.pid in [{node}] and n_e.pid in [{node_end}] '''
         cypher = f'''match p=(n:outside)-[*0..1]->(n_m:outside)-[*0..{path_length}]-(n_e:outside)
         where {filt}
-        return timestamp() as batch,extract(x IN relationships(p)|id(x)) as thing,extract(x IN relationships(p)|100.0-toFloat(coalesce(x.norm,0.0))) as distance,length(p) as length
-        order by sqrt(coalesce(distance[0],0.0)^2+coalesce(distance[1],0.0)^2+coalesce(distance[2],0.0)^2) asc,length asc
+        return timestamp() as batch,extract(x IN relationships(p)|id(x)) as thing,extract(x IN nodes(p)|x.mass) as mass,length(p) as length
+        order by coalesce(mass[0],0.0) asc, coalesce(mass[1],0.0) asc, coalesce(mass[2],0.0) asc, coalesce(mass[3],0.0) asc, coalesce(mass[4],0.0) asc, coalesce(mass[5],0.0) asc, length asc
         limit {batch}
         '''
         #print(cypher)
         w = writer()
         thing = w.save_w2v_txt(cypher,save_path)
+        return cypher
+
+class summing_up(object):
+    """
+    根据norm权重计算节点的全局权重
+
+    """
+    def compute(self):
+        """
+        计算pagerank
+
+        """
+        cypher = "CALL algo.pageRank('match (n:outside) return id(n) as id','match (n:outside)-[r:watching|extend]-(n_e:outside) return id(n) as source,id(n_e) as target',{graph:'cypher', iterations:20, write:true, writeProperty:'mass', weightProperty:'norm'});"
+        c = carrier()
+        c.run_cypher(cypher)
+        print("已计算pagerank,并将结果写入节点mass属性上")
         return cypher
 
 
