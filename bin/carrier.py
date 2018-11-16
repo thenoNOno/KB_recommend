@@ -304,7 +304,7 @@ class writer(object):
         check_e = '{'+f'''pid:row.{label_end}'''+'}'
         check_n = '{'+f'''pid:row.{label_end}'''+'}'
         if source == 'local':
-            batch = '{batchSize:10000, iterateList:false, parallel:false}'
+            batch = '{batchSize:10000, iterateList:false, parallel:true}'
             cypher = f'''
             CALL apoc.periodic.iterate(
             'CALL apoc.load.csv("{filename}") yield map as row return row'
