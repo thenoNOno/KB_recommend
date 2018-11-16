@@ -23,6 +23,8 @@ class collection_room(object):
             return learner()
         elif worker == 'rater':
             return rater()
+        elif worker == 'brave':
+            return brave()
         elif worker == 'judge':
             return judge()
         elif worker == 'cleaner':
@@ -276,6 +278,43 @@ class rater(worker):
         """
         pass
 
+class brave(worker):
+    """
+    使用mass,高效地预测实体集中每个实体A对应的的类的实体B,A->B的相遇概率
+
+    """
+    def __init__(self):
+        pass
+
+    def run(self, nodes_doc, label_end, path_length, batch='32'):
+        nodes = self.collect(nodes_doc)
+        label_end = label_end
+        print('寻找label:', label_end)
+        sn = snap_algo()
+        chances = sn.fall_loop(nodes, label_end, path_length, batch)
+        chances_doc = nodes_doc+'_chances.txt'
+        c = carrier()
+        c.save_csv(chances, chances_doc)
+        self.chances_doc = chances_doc
+        self.docs = chances_doc
+
+    def collect(self, filename):
+        r = rule()
+        nodes = []
+        with open(filename, 'r', encoding='utf8') as f:
+            next(f)
+            for line in f:
+                line = r.line_qualifier(line).replace('\n', '')
+                nodes.append(line)
+        return nodes
+
+    def save(self, data):
+        """
+        保存数据集
+
+        """
+        pass
+
 
 class judge(worker):
     """
@@ -285,12 +324,13 @@ class judge(worker):
     def __init__(self):
         pass
 
-    def run(self, nodes_doc, target_doc, label_end, path_length='1'):
-        chances_doc = self.save(nodes_doc, target_doc, label_end, path_length)
+    def run(self, nodes_doc, target_doc, label_end, path_length='1', worker='rater'):
+        nodes_docs = self.collect(nodes_doc, label_end, path_length, worker)
+        chances_doc = self.save(nodes_docs, target_doc)
         self.chances_doc = chances_doc
         self.docs = chances_doc
 
-    def collect(self, doc, label_end, path_length, sorter='sorter', worker='rater'):
+    def collect(self, doc, label_end, path_length, worker, sorter='sorter'):
         print('\n整理任务:', datetime.now())
         co = collection_room()
         nodes_docs = co.subtask(sorter, doc)
@@ -301,17 +341,16 @@ class judge(worker):
         print('任务结束:', datetime.now())
         return nodes_docs
 
-    def save(self, nodes_doc, target_doc, label_end, path_length):
+    def save(self, nodes_docs, target_doc):
         """
         保存数据集
 
         """
-        nodes_docs = self.collect(nodes_doc, label_end, path_length)
         chances_docs = []
         for line in nodes_docs:
             chances_doc = line+'_chances.txt'
             chances_docs.append(chances_doc)
-        columns = ['pid','node','node_end','n_e','distance','mass','chance','length']
+        columns = []
         w = writer()
         target_doc = w.merge_csv(chances_docs, target_doc, columns)
         return target_doc

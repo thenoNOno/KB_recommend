@@ -27,7 +27,7 @@ class forecast():
         #并行评估
         co = collection_room()
         ju = co.apply_worker('judge')
-        ju.run(nodes_doc, target_doc, 'term', path_length='3')
+        ju.run(nodes_doc, target_doc, ['entity','entity','term','content'], path_length='4', worker='brave')
         chances_doc = ju.chances_doc
         return chances_doc
 

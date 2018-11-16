@@ -111,45 +111,64 @@ class snap_algo():
     算法优化
 
     """
-    def fall_next(self, node, batch, label_end):
+    def fall_next(self, nodes, label_end, batch):
         cypher = f'''match (n)-[r]-(n_e:{label_end})
-        where id(n) in {node}
-        return id(n_e) as n_e, n_e.mass as mass, r.norm as norm
+        where n.pid in {nodes}
+        return n_e.pid as n_e, n_e.mass as mass, sum(toFloat(r.norm)) as norm
         order by n_e.mass desc
         limit {batch}
         '''
+        print(cypher)
         c = carrier()
         data = c.run_cypher(cypher).data()
         dataframe = pd.DataFrame(data)
         return dataframe
 
-    def fall_step(self, node, batch, path_length, label_end):
+    def fall_step(self, pid, nodes, label_end, path_length, batch):
         step = 0
-        tmp_node = node
-        path = pd.DataFrame(columns=['n_e','mass','norm','step'])
-        while step < path_length:
+        tmp_nodes = '['+nodes+']'
+        path = pd.DataFrame(columns=['pid','n_e','mass','norm','step'])
+        while step < int(path_length):
             tmp_label_end = label_end[step]
-            tmp_path = self.fall_next(tmp_node, batch, tmp_label_end)
+            tmp_path = self.fall_next(tmp_nodes, tmp_label_end, batch)
+            tmp_path['pid'] = pid
             tmp_path['step'] = step
-            tmp_node = list(tmp_path['n_e'])
+            if tmp_path.empty:
+                return tmp_path
+            else:
+                tmp_nodes = list(tmp_path['n_e'])
             step = step+1
         path = path.append(tmp_path, ignore_index=True)
         return path
 
-    def fall_label(self, node, batch, path_length, label_end):
-        path = self.fall_step(node, batch, path_length, label_end)
-        nodes = list(set(list(path['n_e'])))
-        return nodes
+    def fall_stop(self, pid, nodes, label_end, path_length, batch):
+        path = self.fall_step(pid, nodes, label_end, path_length, batch)
+        if path.empty:
+            return path
+        else:
+            path = path.sort_values(by='norm', axis=0, ascending=False)[0:2]
+        return path
 
-
+    def fall_loop(self, nodes, label_end, path_length, batch):
+        chances = pd.DataFrame(columns=['pid','n_e','norm','mass','step'])
+        for line in nodes:
+            line = line.split(' ', 1)
+            pid = line[0]
+            node = line[1]
+            chance = self.fall_stop(pid, node, label_end, path_length, batch)
+            if chance.empty:
+                pass
+            else:
+                chances = chances.append(chance, ignore_index=True)
+        return chances
 def main():
     """
     程序执行入口
 
     """
-    # node = [854815]
+    # nodes = ['川润股份','贵阳银行','云南国际信托','黄牛','信托','房产','清洁能源','粉丝','机械','动力装备']
     # sn = snap_algo()
-    # res = sn.fall_label(node, 5, 3, ['entity','entity','term'])
+    # res = sn.fall_stop(nodes, 64, 3, ['entity','entity','term'])
     # print(res)
 
 if __name__=='''__main__''':
