@@ -33,7 +33,8 @@ class seeding():
                 try:
                     pid = columns[0]
                     content = columns[1]
-                except:
+                except Exception as error:
+                    print('错误信息:', error)
                     err_cn = err_cn+1
                     err_content.append(str(columns))
                 tmp_cut_content = jieba.cut(content, cut_all=False, HMM=True)
@@ -44,16 +45,15 @@ class seeding():
                 tmp_line.set_index('term', drop=False, inplace=True)
                 cut_content = pd.merge(tmp_line
                                        , dict_term_df
-                                       , how="inner"
-                                       , on='term'
-                )['term']
+                                       , how='inner'
+                                       , on='term')['term']
                 #拼接pid,term
                 pid_flag = '\n'+pid+' '
                 word_line = pid+' '+pid_flag.join(list(cut_content))+'\n'
                 data.append(word_line)
                 # 批量写出,防止分词占用内存过多
                 data = w.save_txt_batch(data, target_doc, 100)
-        if len(data) != 0:
+        if data:
             c.save_txt(data, target_doc)
         else:
             pass
@@ -99,7 +99,8 @@ class seeding():
                 try:
                     pid = columns[0]
                     content = columns[1]
-                except:
+                except Exception as error:
+                    print('错误信息:', error)
                     err_cn = err_cn+1
                     err_content.append(str(columns))
                 tmp_cut_content = jieba.cut(content, cut_all=False, HMM=True)
@@ -108,9 +109,12 @@ class seeding():
                 tmp_line = pd.DataFrame(tmp_cut_content)
                 tmp_line.columns = ('term',)
                 tmp_line.set_index('term', drop=False, inplace=True)
-                cut_content = pd.merge(tmp_line, dict_term_df, how="inner", on='term')['term']
+                cut_content = pd.merge(tmp_line
+                                       , dict_term_df
+                                       , how='inner'
+                                       , on='term')['term']
                 #拼接pid,term
-                if len(cut_content) > 0:
+                if cut_content:
                     flag = ','
                     flag_line = flag.join(cut_content)
                     word_line = pid+' '+flag_line+'\n'
@@ -119,7 +123,7 @@ class seeding():
                     pass
                 # 批量写出,防止分词占用内存过多
                 data = w.save_txt_batch(data, target_doc, 100)
-        if len(data) != 0:
+        if data:
             c.save_txt(data, target_doc)
         else:
             pass
@@ -142,13 +146,14 @@ class seeding():
                 try:
                     pid = columns[0]
                     content = columns[1]
-                except:
+                except Exception as error:
+                    print('错误信息:', error)
                     err_cn = err_cn+1
                     err_content.append(str(columns))
                 tmp_cut_content = jieba.cut(content, cut_all=False, HMM=True)
                 cut_content = list(set(tmp_cut_content))
                 #拼接pid,term
-                if len(cut_content) > 0:
+                if cut_content:
                     flag = '\n'+pid+' '
                     word_line = pid+' '+flag.join(cut_content)+'\n'
                     data.append(word_line)
@@ -156,7 +161,7 @@ class seeding():
                     pass
                 # 批量写出,防止分词占用内存过多
                 data = w.save_txt_batch(data, target_doc, 100)
-        if len(data) != 0:
+        if data:
             c.save_txt(data, target_doc)
         else:
             pass
@@ -179,12 +184,13 @@ class seeding():
                 try:
                     pid = columns[0]
                     content = columns[1]
-                except:
+                except Exception as error:
+                    print('错误信息:', error)
                     err_cn = err_cn+1
                     err_content.append(str(columns))
                 tmp_cut_content = jieba.cut(content, cut_all=False, HMM=True)
                 cut_content = list(set(tmp_cut_content))
-                if len(cut_content) > 0:
+                if cut_content:
                     flag = ','
                     flag_line = flag.join(cut_content)
                     word_line = pid+' '+flag_line+'\n'
@@ -193,7 +199,7 @@ class seeding():
                     pass
                 # 批量写出,防止分词占用内存过多
                 data = w.save_txt_batch(data, target_doc, 100)
-        if len(data) != 0:
+        if data:
             c.save_txt(data, target_doc)
         else:
             pass
@@ -213,10 +219,9 @@ class seeding():
         #merge
         event_term = pd.merge(event_df
                               , term_df
-                              , how="inner"
+                              , how='inner'
                               , left_on='n_e'
-                              , right_on='content'
-        )[['n', 'term']]
+                              , right_on='content')[['n', 'term']]
         event_term.columns = ('n', 'n_e')
         c.save_csv(event_term, target_doc, sep=' ')
         return target_doc
