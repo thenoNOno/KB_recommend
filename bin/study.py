@@ -13,7 +13,7 @@ class learn(object):
     使用训练集作为监督,学习实体间关系的权重,完善本体(ontology)的知识图谱
 
     """
-    def __init__(self,train_doc,model_path='1'):
+    def __init__(self, train_doc, model_path='1'):
         """
         初始化,训练模型,权重写入图谱
 
@@ -29,25 +29,25 @@ class learn(object):
         save_path = train_doc+'_model.txt'
         model_path = model_path
         #使用w2v纠正维度
-        print('开始学习权重:',datetime.now(),'\n使用训练集:',train_doc)
+        print('开始学习权重:', datetime.now(), '\n使用训练集:', train_doc)
         #配置实例属性,作为训练参数
         self.config()
         #如果model_path参数为1,使用模型存储路径作为传入路径
-        if model_path=='1':
+        if model_path == '1':
             model_path = save_model_path
         else:
             pass
         #如果model_path参数为0,初始化模型,否则使用历史模型,获得更新的模型
-        if model_path=='0':
-            self.train(train_doc,save_path,save_model_path)
+        if model_path == '0':
+            self.train(train_doc, save_path, save_model_path)
         elif ru.path_exists(model_path):
-            self.training(train_doc,model_path,save_path,save_model_path)
+            self.training(train_doc, model_path, save_path, save_model_path)
         else:
             raise ValueError('模型路径错误')
         self.keep(save_path)
         summing = summing_up()
         summing.compute()
-        print('图谱已更新:',datetime.now(),'\n模型路径:',save_model_path)
+        print('图谱已更新:', datetime.now(), '\n模型路径:', save_model_path)
         #实例属性
         self.train_doc = train_doc
         self.model_path = model_path
@@ -73,7 +73,7 @@ class learn(object):
         #配置日志
         logging.basicConfig(format='%(asctime)s : %(levelname)s : %(message)s', level=logging.ERROR)
 
-    def train(self,train_doc,save_path,save_model_path):
+    def train(self, train_doc, save_path, save_model_path):
         """
         初始化w2v模型
 
@@ -97,7 +97,7 @@ class learn(object):
                                       ,binary=False
                                       ,total_vec=None)
 
-    def training(self,train_doc,model_path,save_path,save_model_path):
+    def training(self, train_doc, model_path, save_path, save_model_path):
         """
         加载已有模型,更新词表,增量训练,存储模型文件
 
@@ -105,7 +105,7 @@ class learn(object):
         print('加载模型并更新')
         docs = g.word2vec.LineSentence(train_doc)
         model = g.Word2Vec.load(model_path)
-        model.build_vocab(docs,update = True)
+        model.build_vocab(docs, update = True)
         model.train(docs, total_examples=model.corpus_count, epochs=model.iter)
         #save 模型
         model.save(save_model_path)
@@ -138,7 +138,7 @@ class light(object):
     def __init__(self):
         pass
 
-    def run(self,event_doc,batch='8',path_length='2'):
+    def run(self, event_doc, batch='8', path_length='2'):
         """
         初始化,根据事件信息获取图谱路径作为特征,整合为训练集,存入本地文件
 
@@ -154,31 +154,31 @@ class light(object):
         ru.path_exists(event_doc)
         #如果训练集存在就清理它,重命名到remove_backup路径
         ru.soft_remove(train_doc)
-        print('请等待训练集初始化:',datetime.now(),event_doc)
-        self.save(event_doc,train_doc,batch,path_length)
+        print('请等待训练集初始化:', datetime.now(), event_doc)
+        self.save(event_doc, train_doc, batch, path_length)
         #实例属性
         self.event_doc = event_doc
         self.train_doc = train_doc
         self.batch = batch
 
-    def save(self,event_doc,train_doc,batch,path_length):
+    def save(self, event_doc, train_doc, batch, path_length):
         """
         将图谱特征查询的结果作为训练集,存入本地文件
 
         """
-        with open(event_doc,'r',encoding='utf8') as f:
+        with open(event_doc, 'r', encoding='utf8') as f:
             #next跳过第一行,因为第一行不是事件而是字段名
             next(f)
             for line in f:
                 r = rule()
                 line = r.line_qualifier(line)
-                list = line.replace('\n','').split(' ',1)
-                node = list[0]
-                node_end = list[1]
+                tmp_line = line.replace('\n', '').split(' ', 1)
+                node = tmp_line[0]
+                node_end = tmp_line[1]
                 #print(node,node_end)
-                thing = self.search(node,node_end,train_doc,batch,path_length)
+                thing = self.search(node, node_end, train_doc, batch, path_length)
 
-    def search(self,node,node_end,save_path,batch,path_length):
+    def search(self, node, node_end, save_path, batch, path_length):
         """
         查找事件涉及的实体关系
 
@@ -202,7 +202,7 @@ class light(object):
         '''
         #print(cypher)
         w = writer()
-        thing = w.save_w2v_txt(cypher,save_path)
+        thing = w.save_w2v_txt(cypher, save_path)
         return cypher
 
 class summing_up(object):
@@ -217,23 +217,19 @@ class summing_up(object):
         """
         cypher = "CALL algo.pageRank('match (n:outside) return id(n) as id','match (n:outside)-[r:watching|extend]-(n_e:outside) return id(n) as source,id(n_e) as target',{graph:'cypher', iterations:20, write:true, writeProperty:'mass', weightProperty:'norm'});"
         c = carrier()
-        c.run_cypher(cypher)
-        print("已计算pagerank,并将结果写入节点mass属性上")
+        try:
+            c.run_cypher(cypher)
+            print("已计算pagerank,并将结果写入节点mass属性上")
+        except Exception as error:
+            print("未计算pagerank,错误信息:", error)
         return cypher
 
 
-def main(event_doc='0', train_book='0'):
+def main():
     """
     程序执行入口
 
     """
-    if train_book == '0':
-        event_doc = event_doc
-        li = light.run(event_doc,'8')
-        train_book == li.train_doc
-        le = learn(train_book,'1')
-    else:
-        learn(train_book,'0')
 
-if __name__=='''__main__''':
-    main(event_doc='/KB_recommend/data/train/news_labels.txt', train_book='/KB_recommend/data/train/train_book.txt')
+if __name__ == '''__main__''':
+    main()

@@ -24,7 +24,6 @@ return
 id(n_e) as n_e,sqrt(sum(coalesce(mass[0],0.0)^2+coalesce(mass[1],0.0)^2)) as mass
 order by mass desc
         '''
-        #print(cypher)
         c = carrier()
         data = c.run_cypher(cypher).data()
         dataframe = pd.DataFrame(data)
@@ -40,7 +39,6 @@ order by mass desc
         node = node
         label_end = label_end
         batch = batch
-        #filt = f''' id(n)=toInteger('{node}') '''
         filt = f''' n.pid in [{node}] '''
         cypher = f'''match p=(n:outside)-[*0..{path_length}]-(n_e:{label_end})
         where {filt}
@@ -51,17 +49,6 @@ order by mass desc
         order by distance asc
         limit {batch}
         '''
-#         cypher = f'''
-# match p=(n:outside)-[*0..{path_length}]-(n_e:{label_end})
-# where {filt}
-# with *,extract(x IN relationships(p)|(100.0-toFloat(coalesce(x.norm,0.0)))) as distances
-# return distinct
-# n_e.full_name as full_name
-# ,{pid} as pid,n_e.pid as node_end,id(n_e) as n_e,sqrt(sum(coalesce(distances[0],0.0)^2+coalesce(distances[1],0.0)^2+coalesce(distances[2],0.0)^2+coalesce(distances[3],0.0)^2)) as distance,length(p) as length
-# order by distance asc
-# limit {batch}
-#         '''
-        #print(cypher)
         c = carrier()
         data = c.run_cypher(cypher).data()
         dataframe = pd.DataFrame(data)
@@ -77,6 +64,8 @@ order by mass desc
         label_end = label_end
         batch = batch
         distance = self.assess_distance(pid, node, label_end, path_length, batch)
+        if distance.empty:
+            return distance
         node_list = list(distance['n_e'].drop_duplicates())
         mass = self.assess_mass(node_list, path_length)
         if mass.empty:
@@ -161,15 +150,13 @@ class snap_algo():
             else:
                 chances = chances.append(chance, ignore_index=True)
         return chances
+
+
 def main():
     """
     程序执行入口
 
     """
-    # nodes = ['川润股份','贵阳银行','云南国际信托','黄牛','信托','房产','清洁能源','粉丝','机械','动力装备']
-    # sn = snap_algo()
-    # res = sn.fall_stop(nodes, 64, 3, ['entity','entity','term'])
-    # print(res)
 
-if __name__=='''__main__''':
+if __name__ == '''__main__''':
     main()

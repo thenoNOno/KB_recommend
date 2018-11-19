@@ -69,6 +69,7 @@ class train():
         self.clean()
         return learn_doc
 
+
 def main():
     """
     程序执行入口

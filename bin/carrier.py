@@ -1,7 +1,5 @@
 ﻿#!/usr/bin/env python
 # -*- coding: utf-8 -*
-from neo4j.v1 import GraphDatabase
-from datetime import datetime
 import pandas as pd
 import numpy as np
 import pymysql
@@ -10,8 +8,11 @@ import configparser
 import time
 import os
 import re
+from neo4j.v1 import GraphDatabase
+from datetime import datetime
 
-class carrier(object):
+
+class carrier():
     """
     数据操作相关的工具类
 
@@ -162,69 +163,65 @@ class writer(object):
     数据写出相关的类
 
     """
-    def save_data_csv(self,cypher,filename,mode='a',header=True):
+    def save_data_csv(self, cypher, filename, mode='a', header=True):
         """
         执行cypher查询并存储为csv
 
         """
-        cypher=cypher
-        c=carrier()
-        data=c.run_cypher(cypher).data()
+        cypher = cypher
+        c = carrier()
+        data = c.run_cypher(cypher).data()
         if data:
             print('数据正在处理')
         else:
-            print('没有获取到数据',cypher)
+            print('没有获取到数据', cypher)
         dataframe = pd.DataFrame(data)
         print(filename)
-        c.save_csv(dataframe,filename,mode,header)
+        c.save_csv(dataframe, filename, mode, header)
         return filename
 
-    def save_d2v_txt(self,cypher,filename):
+    def save_d2v_txt(self, cypher, filename):
         """
         执行cypher查询,并将查询结果整理为供doc2vec使用的txt文档
 
         """
-        cypher=cypher
-        c=carrier()
-        data=c.run_cypher(cypher).data()
+        cypher = cypher
+        c = carrier()
+        data = c.run_cypher(cypher).data()
         if data:
             print('数据正在处理')
         else:
             print('没有获取到数据')
-        d2v=[]
-        # d2v.extend(data[0].keys())
+        d2v = []
         for line in data:
             d2v.append(str(line['batch']))
             d2v.append(',')
             d2v.append(str(' '.join(str(s) for s in line['thing'])))
             d2v.append('\n')
         print(filename)
-        c.save_txt(d2v,filename)
+        c.save_txt(d2v, filename)
         return filename
 
-    def save_w2v_txt(self,cypher,filename):
+    def save_w2v_txt(self, cypher, filename):
         """
         执行cypher查询,并将查询结果整理为供word2vec使用的txt文档
 
         """
-        cypher=cypher
-        c=carrier()
-        data=c.run_cypher(cypher).data()
+        cypher = cypher
+        c = carrier()
+        data = c.run_cypher(cypher).data()
         if data:
-            #print('数据正在处理')
             pass
         else:
-            #print('没有获取到数据:',cypher)
             print('一次查询没有获取到数据')
-        w2v=[]
+        w2v = []
         for line in data:
             w2v.append(str(' '.join(str(s) for s in line['thing'])))
             w2v.append('\n')
-        #print(filename)
-        c.save_txt(w2v,filename)
+        c.save_txt(w2v, filename)
         return filename
 
-    def save_vector_csv(self,w2v_filename,filename,mode='w'):
+    def save_vector_csv(self, w2v_filename, filename, mode='w'):
         """
         将w2v向量整理为需要的csv格式
 
@@ -234,18 +231,18 @@ class writer(object):
             #next跳过第一行,因为它并不是词向量
             next(f)
             for line in f:
-                tmp_line = line.replace('\n','').split(' ',1)
-                id = tmp_line[0]
+                tmp_line = line.replace('\n', '').split(' ', 1)
+                tmp_id = tmp_line[0]
                 vector = tmp_line[1].split(' ')
                 norm = np.linalg.norm(vector)
-                l = []
-                l.append(id)
-                l.append(norm)
-                data.append(l)
+                tmp_list = []
+                tmp_list.append(tmp_id)
+                tmp_list.append(norm)
+                data.append(tmp_list)
         dataframe = pd.DataFrame(data)
         dataframe.columns=['id','norm']
         c = carrier()
-        c.save_csv(dataframe,filename,mode)
+        c.save_csv(dataframe, filename, mode)
         return filename
 
     def load_vector_neo4j(self, filename, source='local'):
@@ -337,7 +334,7 @@ class writer(object):
                 batch = '{batchSize:10000, iterateList:true, parallel:true}'
                 cypher = f'''
                 CALL apoc.periodic.iterate(
-                'CALL apoc.load.csv("{filename}") yield map as row return row'
+                'CALL apoc.load.jdbc("{source}","{select_sql}") YIELD row return row'
                 ,'merge (n:outside:{label} {check}) with *
                 merge (n_e:outside:{label_end} {check_e}) with *
                 merge (n_n:outside:entity {check_n}) with *
@@ -353,12 +350,12 @@ class writer(object):
             res = False
         return res
 
-    def make_subfile(self,lines,head,filename,sub):
+    def make_subfile(self, lines, head, filename, sub):
         """
         保存子文件
 
         """
-        with open(filename,'w',encoding='utf8') as f:
+        with open(filename, 'w', encoding='utf8') as f:
             if head != '':
                 f.writelines([head])
             else:
@@ -366,14 +363,14 @@ class writer(object):
             f.writelines(lines)
             return sub + 1
 
-    def split_count(self,filename,count,header=True):
+    def split_count(self, filename, count, header=True):
         """
         根据行数切分文件
 
         """
-        [name,extension] = os.path.splitext(filename)
+        [name, extension] = os.path.splitext(filename)
         filenames = []
-        with open(filename,'r',encoding='utf8') as f:
+        with open(filename, 'r', encoding='utf8') as f:
             if header == True:
                 head = f.readline()
             elif header == False:
@@ -385,44 +382,44 @@ class writer(object):
             for line in f:
                 buff.append(line)
                 if len(buff) == count:
-                    subfilename = name + '_tmp_' + str(sub) + extension
-                    sub = self.make_subfile(buff,head,subfilename,sub)
+                    subfilename = name+'_tmp_'+str(sub)+extension
+                    sub = self.make_subfile(buff, head, subfilename, sub)
                     buff = []
                     filenames.append(subfilename)
             if len(buff) != 0:
-                subfilename  = name + '_tmp_' + str(sub) + extension
-                sub = self.make_subfile(buff,head,subfilename,sub)
+                subfilename = name+'_tmp_'+str(sub)+extension
+                sub = self.make_subfile(buff, head, subfilename, sub)
                 filenames.append(subfilename)
         return filenames
 
-    def save_txt_batch(self,data,filename,batch):
+    def save_txt_batch(self, data, filename, batch):
         """
         判断数组大小写出数据
 
         """
         c = carrier()
-        if len(data)>batch:
-            c.save_txt(data,filename,mode='a+')
+        if len(data) > batch:
+            c.save_txt(data, filename, mode='a+')
             data = []
         else:
             pass
         return data
 
-    def save_csv_batch(self,data,columns,filename,batch):
+    def save_csv_batch(self, data, columns, filename, batch):
         """
         判断数组大小写出数据
 
         """
         c = carrier()
-        if len(data)>batch:
+        if len(data) > batch:
             dataframe = pd.DataFrame(data)
             dataframe.columns = columns
             if os.path.exists(filename):
                 header = False
             else:
                 header = True
-            c.save_csv(dataframe,filename,mode='a+',header=header)
-            dataframe.drop(columns=columns,inplace=True)
+            c.save_csv(dataframe, filename, mode='a+', header=header)
+            dataframe.drop(columns=columns, inplace=True)
             data = []
         else:
             pass
@@ -447,12 +444,12 @@ class rule(object):
     封装一些代码规则
 
     """
-    def soft_remove(self,filename):
+    def soft_remove(self, filename):
         #清理文件,重命名到remove_backup路径
         if os.path.exists(filename):
-            remove_time=str(time.time())
-            remove_backup=filename+remove_time+'.remove'
-            os.rename(filename,remove_backup)
+            remove_time = str(time.time())
+            remove_backup = filename+remove_time+'.remove'
+            os.rename(filename, remove_backup)
             return True
         else:
             pass
@@ -463,7 +460,7 @@ class rule(object):
         else:
             print('文件不存在:', filename)
 
-    def line_qualifier(self, line ,qualifier='"' ,separator=',' ,column_separator=' '):
+    def line_qualifier(self, line, qualifier='"', separator=',', column_separator=' '):
         line = ''+qualifier+line.replace(qualifier, '').replace(separator, '","').replace(column_separator, '" "')+qualifier
         return line
 

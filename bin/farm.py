@@ -1,14 +1,14 @@
 #!/usr/bin/env python
 # -*- coding: utf-8 -*
+import threading
 from study import *
 from court import *
 from depot import *
-import threading
 
 
-class collection_room(object):
+class collection_room():
     """
-    收藏室,作为工厂类,分配worker
+    工厂类,分配worker
 
     """
     def __init__(self):
@@ -31,42 +31,47 @@ class collection_room(object):
             return cleaner()
         elif worker == 'hamaul':
             return hamaul()
-        elif worker == 'packer':
-            return packer()
         elif worker == 'stockman':
             return stockman()
+        elif worker == 'packer':
+            return packer()
+        elif worker == 'packers':
+            return packers()
         else:
             raise ValueError('申请的worker类不存在')
 
-    def subtask(self,worker,doc,target_doc='1',**kwargs):
+    def subtask(self, worker, doc, target_doc='1', **kwargs):
         work = self.apply_worker(worker)
-        if target_doc=='1':
-            work.run(doc,**kwargs)
+        if target_doc == '1':
+            work.run(doc, **kwargs)
         else:
-            work.run(doc,target_doc,**kwargs)
+            work.run(doc, target_doc, **kwargs)
         docs = work.docs
         return docs
 
-    def taskbar(self,worker,docs,target_doc,workload,**kwargs):
+    def taskbar(self, worker, docs, target_doc, workload, **kwargs):
         docs_list = []
         p = 0
         t_list = []
-        print(worker,':',workload,datetime.now())
+        print(worker, ':', workload, datetime.now())
         while p < workload:
             worker = worker
             doc = docs[p]
-            t = threading.Thread(target=self.subtask,args=(worker,doc,target_doc),kwargs=kwargs,name=[worker,doc])
+            t = threading.Thread(target=self.subtask
+                                 , args=(worker,doc,target_doc)
+                                 , kwargs=kwargs
+                                 , name=[worker,doc]
+            )
             t.start()
             docs_list.append(doc)
             t_list.append(t)
             p = p+1
         for t in t_list:
             t.join()
-        print(worker,':',workload,datetime.now())
+        print(worker, ':', workload, datetime.now())
         return docs_list
 
-
-class worker(object):
+class worker():
     """
     抽象工作者类
 
@@ -74,13 +79,13 @@ class worker(object):
     def __init__(self):
         pass
 
-    def run(self,event_doc,batch):
+    def run(self, event_doc, batch):
         pass
 
-    def collect(self,filename,batch):
+    def collect(self, filename, batch):
         pass
 
-    def save(self,data):
+    def save(self):
         pass
 
 
@@ -130,22 +135,22 @@ class farmer(worker):
     def __init__(self):
         pass
 
-    def run(self,event_doc,batch='64',path_length='2'):
-        train_doc = self.collect(event_doc,batch,path_length)
+    def run(self, event_doc, batch='64', path_length='2'):
+        train_doc = self.collect(event_doc, batch, path_length)
         self.train_doc = train_doc
         self.docs = train_doc
 
-    def collect(self,filename,batch,path_length):
+    def collect(self, filename, batch, path_length):
         """
         使用light查找事件数据集的特征,生成训练集
 
         """
         li = light()
-        li.run(filename,batch,path_length)
+        li.run(filename, batch, path_length)
         train_doc = li.train_doc
         return train_doc
 
-    def save(self,data):
+    def save(self):
         """
         保存数据集
 
@@ -205,14 +210,15 @@ class learner(worker):
     def __init__(self):
         pass
 
-    def run(self, doc, book, model_path='1', path_length='2'):
-        learn = self.save(doc, book, model_path, path_length)
+    def run(self, doc, book, model_path='1', path_length='2', sorter='sorter', worker='farmer'):
+        event_docs = self.collect(doc, path_length, sorter, worker)
+        learn = self.save(event_docs, book, model_path)
         self.book = book
         self.model_path = learn.model_path
         self.save_path = learn.save_path
         self.save_model_path = learn.save_model_path
 
-    def collect(self, doc, path_length, sorter='sorter', worker='farmer'):
+    def collect(self, doc, path_length, sorter, worker):
         print('\n整理任务:', datetime.now())
         co = collection_room()
         event_docs = co.subtask(sorter, doc)
@@ -223,8 +229,7 @@ class learner(worker):
         print('任务结束:', datetime.now())
         return train_docs
 
-    def save(self, doc, book, model_path, path_length):
-        event_docs = self.collect(doc, path_length)
+    def save(self, event_docs, book, model_path):
         trains = []
         for event_doc in event_docs:
             train_doc = event_doc+'_doc.txt'
@@ -247,36 +252,35 @@ class rater(worker):
     def __init__(self):
         pass
 
-    def run(self,nodes_doc,label_end,path_length,batch='64'):
+    def run(self, nodes_doc, label_end, path_length, batch='64'):
         nodes = self.collect(nodes_doc)
-        # (filepath,tempfilename) = os.path.split(nodes_doc)
-        # label_end = re.sub(r'_.*','',tempfilename)
         label_end = label_end
         print('寻找label:',label_end)
         b = balance()
-        chances = b.assess(nodes,label_end,path_length,batch)
+        chances = b.assess(nodes, label_end, path_length, batch)
         chances_doc = nodes_doc+'_chances.txt'
         c = carrier()
         c.save_csv(chances,chances_doc)
         self.chances_doc = chances_doc
         self.docs = chances_doc
 
-    def collect(self,filename):
+    def collect(self, filename):
         r = rule()
         nodes = []
-        with open(filename,'r',encoding='utf8') as f:
+        with open(filename, 'r', encoding='utf8') as f:
             next(f)
             for line in f:
-                line = r.line_qualifier(line).replace('\n','')
+                line = r.line_qualifier(line).replace('\n', '')
                 nodes.append(line)
         return nodes
 
-    def save(self,data):
+    def save(self):
         """
         保存数据集
 
         """
         pass
+
 
 class brave(worker):
     """
@@ -308,7 +312,7 @@ class brave(worker):
                 nodes.append(line)
         return nodes
 
-    def save(self, data):
+    def save(self):
         """
         保存数据集
 
@@ -324,13 +328,13 @@ class judge(worker):
     def __init__(self):
         pass
 
-    def run(self, nodes_doc, target_doc, label_end, path_length='1', worker='rater'):
-        nodes_docs = self.collect(nodes_doc, label_end, path_length, worker)
+    def run(self, nodes_doc, target_doc, label_end, path_length='1', sorter='sorter', worker='rater'):
+        nodes_docs = self.collect(nodes_doc, label_end, path_length, sorter, worker)
         chances_doc = self.save(nodes_docs, target_doc)
         self.chances_doc = chances_doc
         self.docs = chances_doc
 
-    def collect(self, doc, label_end, path_length, worker, sorter='sorter'):
+    def collect(self, doc, label_end, path_length, sorter, worker):
         print('\n整理任务:', datetime.now())
         co = collection_room()
         nodes_docs = co.subtask(sorter, doc)
@@ -382,6 +386,54 @@ class hamaul(worker):
         pass
 
 
+class stockman(worker):
+    """
+    并行转换类与子类关系,生成关系集
+
+    subtask切分的batch数越多,执行越快.测试中16G可用内存可以支撑batch=400
+    """
+    def __init__(self):
+        pass
+
+    def run(self, content_doc, event_doc='0',sorter='sorter', worker='hamaul', mode='list', batch='100'):
+        term_doc = self.collect(content_doc, mode, sorter, worker, batch)
+        if event_doc == '0':
+            self.docs = term_doc
+        else:
+            target_doc = content_doc+'_event_term.txt'
+            event_doc = self.save(term_doc, event_doc, target_doc)
+            self.event_doc = event_doc
+            self.docs = event_doc
+        self.term_doc = term_doc
+
+    def collect(self, content_doc, mode, sorter, worker, batch):
+        term_doc = content_doc+'_term.txt'
+        #创建空的term_doc,写入列名
+        term_head = 'pid term\n'
+        with open(term_doc, 'w', encoding='utf8') as f:
+            f.write(term_head)
+        #开始任务
+        print('\n整理任务:', datetime.now())
+        co = collection_room()
+        content_head = 'pid content\n'
+        content_docs = co.subtask(sorter, content_doc, header=content_head, batch=batch)
+        workload = len(content_docs)
+        print('任务量:', workload, '\n任务列表:', content_docs)
+        print('开始任务:', datetime.now())
+        content_docs = co.taskbar(worker, content_docs, term_doc, workload, mode=mode)
+        print('任务结束:', datetime.now())
+        return term_doc
+
+    def save(self, term_doc, event_doc, target_doc):
+        """
+        保存事件集
+
+        """
+        se = seeding()
+        target_doc = se.get_event(term_doc, event_doc, target_doc)
+        return target_doc
+
+
 class packer(worker):
     """
     生成关系数据,用来导入图谱
@@ -412,7 +464,8 @@ class packer(worker):
         """
         pass
 
-class stockman(worker):
+
+class packers(worker):
     """
     并行转换类与子类关系,生成关系集
 
@@ -421,24 +474,13 @@ class stockman(worker):
     def __init__(self):
         pass
 
-    def run(self, content_doc, event_doc='0', worker='hamaul', mode='list', source='0'):
-        term_doc = self.collect(content_doc, worker, mode)
-        if event_doc == '0':
-            self.docs = term_doc
-        else:
-            target_doc = content_doc+'_event_term.txt'
-            event_doc = self.save(term_doc, event_doc, target_doc)
-            self.event_doc = event_doc
-            self.docs = event_doc
-        if source!='0':
-            se = seeding()
-            res = se.store_away(term_doc, source)
-            print('content_term已导入图谱')
-        else:
-            pass
+    def run(self, content_doc, worker='packer', mode='list', source='0', batch='100'):
+        term_doc = self.collect(content_doc, mode, sorter, worker, batch)
+        self.save(term_doc, source)
         self.term_doc = term_doc
+        self.docs = term_doc
 
-    def collect(self, content_doc,  worker, mode, sorter='sorter'):
+    def collect(self, content_doc, mode, sorter, worker, batch):
         term_doc = content_doc+'_term.txt'
         #创建空的term_doc,写入列名
         term_head = 'pid term\n'
@@ -448,7 +490,7 @@ class stockman(worker):
         print('\n整理任务:', datetime.now())
         co = collection_room()
         content_head = 'pid content\n'
-        content_docs = co.subtask(sorter, content_doc, header=content_head, batch='100')
+        content_docs = co.subtask(sorter, content_doc, header=content_head, batch=batch)
         workload = len(content_docs)
         print('任务量:', workload, '\n任务列表:', content_docs)
         print('开始任务:', datetime.now())
@@ -456,15 +498,18 @@ class stockman(worker):
         print('任务结束:', datetime.now())
         return term_doc
 
-    def save(self, term_doc, event_doc, target_doc):
+    def save(self, term_doc, source):
         """
-        保存事件集
+        保存信息到图谱
 
         """
-        #整合为事件集文件
+        if source == '0':
+            return 'source is 0'
+        else:
+            pass
         se = seeding()
-        target_doc = se.get_event(term_doc, event_doc, target_doc)
-        return target_doc
+        res = se.store_away(term_doc, source)
+        print('content_term已导入图谱')
 
 
 def main():
@@ -472,33 +517,6 @@ def main():
     程序执行入口
 
     """
-    #文件路径
-    event_doc = '/KB_recommend/data/train/news_labels.txt'
-    book = '/KB_recommend/test/train/train_book.txt'
-    nodes_doc = '/KB_recommend/test/forecast/news_nodes.txt'
-    content_doc = '/KB_recommend/test/forecast/content_term.txt'
-    #信息获取
-    # co = collection_room()
-    # st = co.apply_worker('stockman')
-    # st.run(content_doc,event_doc)
-    # print(st.docs)
-    # event_doc = st.event_doc
-    #并行训练
-    # co = collection_room()
-    # le = co.apply_worker('learner')
-    # le.run(event_doc,book,model_path='0')
-    # print(le.book,le.model_path,le.save_model_path,le.save_path)
-    #并行评估
-    # co = collection_room()
-    # ju = co.apply_worker('judge')
-    # ju.run(nodes_doc)
-    # print(ju.chances_doc,ju.docs)
-    #清理文件夹下临时文件
-    # co = collection_room()
-    # co.subtask('cleaner',book)
-    # co.subtask('cleaner',nodes_doc)
-    # co.subtask('cleaner',content_doc)
-
 
 if __name__ == '''__main__''':
     main()
