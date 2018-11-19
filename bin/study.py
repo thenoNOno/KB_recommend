@@ -8,7 +8,7 @@ import time
 import logging
 
 
-class learn(object):
+class learn():
     """
     使用训练集作为监督,学习实体间关系的权重,完善本体(ontology)的知识图谱
 
@@ -80,22 +80,23 @@ class learn(object):
         """
         print('初始化模型')
         docs = g.word2vec.LineSentence(train_doc)
-        model = g.Word2Vec(docs,size=self.size
-                           ,window=self.window
-                           ,min_count=self.min_count
-                           ,sample=self.sample
-                           ,workers=self.workers
-                           ,hs=self.hs
-                           ,negative=self.negative
-                           ,iter=self.iter)
+        model = g.Word2Vec(docs
+                           , size=self.size
+                           , window=self.window
+                           , min_count=self.min_count
+                           , sample=self.sample
+                           , workers=self.workers
+                           , hs=self.hs
+                           , negative=self.negative
+                           , iter=self.iter)
         #save 模型
         model.save(save_model_path)
         #save word2vec向量与词表
         word_save_path = save_path+'_word.txt'
         model.wv.save_word2vec_format(fname=save_path
-                                      ,fvocab=word_save_path
-                                      ,binary=False
-                                      ,total_vec=None)
+                                      , fvocab=word_save_path
+                                      , binary=False
+                                      , total_vec=None)
 
     def training(self, train_doc, model_path, save_path, save_model_path):
         """
@@ -105,16 +106,16 @@ class learn(object):
         print('加载模型并更新')
         docs = g.word2vec.LineSentence(train_doc)
         model = g.Word2Vec.load(model_path)
-        model.build_vocab(docs, update = True)
+        model.build_vocab(docs, update=True)
         model.train(docs, total_examples=model.corpus_count, epochs=model.iter)
         #save 模型
         model.save(save_model_path)
         #save word2vec向量与词表
         word_save_path = save_path+'_word.txt'
         model.wv.save_word2vec_format(fname=save_path
-                                      ,fvocab=word_save_path
-                                      ,binary=False
-                                      ,total_vec=None)
+                                      , fvocab=word_save_path
+                                      , binary=False
+                                      , total_vec=None)
 
     def keep(self, save_path):
         """
@@ -130,7 +131,7 @@ class learn(object):
         w.load_vector_neo4j(csv_save_path, 'mysql')
 
 
-class light(object):
+class light():
     """
     根据传入的事件数据,从知识图谱中获取特征,生成训练集,存入本地文件
 
@@ -175,8 +176,7 @@ class light(object):
                 tmp_line = line.replace('\n', '').split(' ', 1)
                 node = tmp_line[0]
                 node_end = tmp_line[1]
-                #print(node,node_end)
-                thing = self.search(node, node_end, train_doc, batch, path_length)
+                self.search(node, node_end, train_doc, batch, path_length)
 
     def search(self, node, node_end, save_path, batch, path_length):
         """
@@ -191,8 +191,6 @@ class light(object):
             cypher:路径查询使用的cypher
         """
         path_length = path_length
-        #filt = f'''id(n) = toInteger('{node}') and id(n_e) = toInteger('{node_end}')'''
-        #filt = f''' n.pid in [{node}] and n_e.pid in [{node_end}] '''
         filt = f''' n.pid in [{node}] and n_m.pid in [{node}] and n_e.pid in [{node_end}] '''
         cypher = f'''match p=(n:outside)-[*0..1]->(n_m:outside)-[*0..{path_length}]-(n_e:outside)
         where {filt}
@@ -200,12 +198,11 @@ class light(object):
         order by coalesce(mass[0],0.0) asc, coalesce(mass[1],0.0) asc, coalesce(mass[2],0.0) asc, coalesce(mass[3],0.0) asc, coalesce(mass[4],0.0) asc, coalesce(mass[5],0.0) asc, length asc
         limit {batch}
         '''
-        #print(cypher)
         w = writer()
-        thing = w.save_w2v_txt(cypher, save_path)
+        w.save_w2v_txt(cypher, save_path)
         return cypher
 
-class summing_up(object):
+class summing_up():
     """
     根据norm权重计算节点的全局权重
 
@@ -215,7 +212,12 @@ class summing_up(object):
         计算pagerank
 
         """
-        cypher = "CALL algo.pageRank('match (n:outside) return id(n) as id','match (n:outside)-[r:watching|extend]-(n_e:outside) return id(n) as source,id(n_e) as target',{graph:'cypher', iterations:20, write:true, writeProperty:'mass', weightProperty:'norm'});"
+        cypher = '''CALL algo.pageRank('match (n:outside) return id(n) as id'
+        ,'match (n:outside)-[r:watching|extend]-(n_e:outside)
+        return id(n) as source,id(n_e) as target'
+        ,{graph:'cypher', iterations:20, write:true, writeProperty:'mass', weightProperty:'norm'}
+        )
+        ;'''
         c = carrier()
         try:
             c.run_cypher(cypher)

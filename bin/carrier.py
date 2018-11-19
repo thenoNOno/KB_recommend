@@ -126,8 +126,7 @@ class carrier():
                          ,header=header
                          ,index=False
                          ,sep=sep
-                         ,encoding='utf8'
-        )
+                         ,encoding='utf8')
         return filename
 
     def save_txt(self, lists, filename, mode='a+'):
@@ -240,7 +239,7 @@ class writer(object):
                 tmp_list.append(norm)
                 data.append(tmp_list)
         dataframe = pd.DataFrame(data)
-        dataframe.columns=['id','norm']
+        dataframe.columns = ['id', 'norm']
         c = carrier()
         c.save_csv(dataframe, filename, mode)
         return filename

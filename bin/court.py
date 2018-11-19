@@ -3,7 +3,7 @@
 from carrier import *
 
 
-class balance(object):
+class balance():
     """
     评估某实体与某类的实体,两个实体之间发生事件的概率
 
@@ -77,7 +77,8 @@ order by mass desc
                               ,left_on='n_e'
                               ,right_on='n_e')
             chance['chance'] = chance['mass']/chance['distance']
-            chance = chance.sort_values(by=['pid','chance','distance'],ascending=[False,False,True])
+            chance = chance.sort_values(by=['pid','chance','distance']
+                                        , ascending=[False,False,True])
         return chance
 
     def assess(self, nodes, label_end, path_length, batch):
@@ -135,7 +136,9 @@ class snap_algo():
         if path.empty:
             return path
         else:
-            path = path.sort_values(by='norm', axis=0, ascending=False)[0:2]
+            path = path.sort_values(by='norm'
+                                    , axis=0
+                                    , ascending=False)[0:2]
         return path
 
     def fall_loop(self, nodes, label_end, path_length, batch):

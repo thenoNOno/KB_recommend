@@ -60,8 +60,7 @@ class collection_room():
             t = threading.Thread(target=self.subtask
                                  , args=(worker,doc,target_doc)
                                  , kwargs=kwargs
-                                 , name=[worker,doc]
-            )
+                                 , name=[worker,doc])
             t.start()
             docs_list.append(doc)
             t_list.append(t)
@@ -101,18 +100,17 @@ class cleaner(worker):
         delete_flag = delete_flag
         #remove_flag = '.remove'
         cleaned_docs = []
-        filelist = []
-        path, file = os.path.split(filename)
-        for root, dirs, files in os.walk(path,topdown=False):
-            filelist = files
-        for doc in files:
-            if doc.rfind(delete_flag)>0:
+        path, fil = os.path.split(filename)
+        for root, dirs, files in os.walk(path, topdown=False):
+            file_list = files
+        for doc in file_list:
+            if doc.rfind(delete_flag) > 0:
                 filename = path+'/'+doc
                 try:
                     os.remove(filename)
                     cleaned_docs.append(filename)
-                except Exception:
-                    print('文件未清理:', filename)
+                except Exception as error:
+                    print('文件未清理:', filename, '\n错误信息:', error)
                 else:
                     pass
             else:
@@ -225,7 +223,11 @@ class learner(worker):
         workload = len(event_docs)
         print('任务量:', workload, '\n任务列表:', event_docs)
         print('开始任务:', datetime.now())
-        train_docs = co.taskbar(worker, event_docs, '1', workload, path_length=path_length)
+        train_docs = co.taskbar(worker
+                                , event_docs
+                                , '1'
+                                , workload
+                                , path_length=path_length)
         print('任务结束:', datetime.now())
         return train_docs
 
@@ -255,12 +257,12 @@ class rater(worker):
     def run(self, nodes_doc, label_end, path_length, batch='64'):
         nodes = self.collect(nodes_doc)
         label_end = label_end
-        print('寻找label:',label_end)
+        print('寻找label:', label_end)
         b = balance()
         chances = b.assess(nodes, label_end, path_length, batch)
         chances_doc = nodes_doc+'_chances.txt'
         c = carrier()
-        c.save_csv(chances,chances_doc)
+        c.save_csv(chances, chances_doc)
         self.chances_doc = chances_doc
         self.docs = chances_doc
 
@@ -341,7 +343,12 @@ class judge(worker):
         workload = len(nodes_docs)
         print('任务量:', workload, '\n任务列表:', nodes_docs)
         print('开始任务:', datetime.now())
-        nodes_docs = co.taskbar(worker, nodes_docs, '1', workload, label_end=label_end, path_length=path_length)
+        nodes_docs = co.taskbar(worker
+                                , nodes_docs
+                                , '1'
+                                , workload
+                                , label_end=label_end
+                                , path_length=path_length)
         print('任务结束:', datetime.now())
         return nodes_docs
 
@@ -416,11 +423,18 @@ class stockman(worker):
         print('\n整理任务:', datetime.now())
         co = collection_room()
         content_head = 'pid content\n'
-        content_docs = co.subtask(sorter, content_doc, header=content_head, batch=batch)
+        content_docs = co.subtask(sorter
+                                  , content_doc
+                                  , header=content_head
+                                  , batch=batch)
         workload = len(content_docs)
         print('任务量:', workload, '\n任务列表:', content_docs)
         print('开始任务:', datetime.now())
-        content_docs = co.taskbar(worker, content_docs, term_doc, workload, mode=mode)
+        content_docs = co.taskbar(worker
+                                  , content_docs
+                                  , term_doc
+                                  , workload
+                                  , mode=mode)
         print('任务结束:', datetime.now())
         return term_doc
 
@@ -490,11 +504,18 @@ class packers(worker):
         print('\n整理任务:', datetime.now())
         co = collection_room()
         content_head = 'pid content\n'
-        content_docs = co.subtask(sorter, content_doc, header=content_head, batch=batch)
+        content_docs = co.subtask(sorter
+                                  , content_doc
+                                  , header=content_head
+                                  , batch=batch)
         workload = len(content_docs)
         print('任务量:', workload, '\n任务列表:', content_docs)
         print('开始任务:', datetime.now())
-        content_docs = co.taskbar(worker, content_docs, term_doc, workload, mode=mode)
+        content_docs = co.taskbar(worker
+                                  , content_docs
+                                  , term_doc
+                                  , workload
+                                  , mode=mode)
         print('任务结束:', datetime.now())
         return term_doc
 
