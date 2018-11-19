@@ -371,9 +371,9 @@ class writer(object):
         [name, extension] = os.path.splitext(filename)
         filenames = []
         with open(filename, 'r', encoding='utf8') as f:
-            if header == True:
+            if header is True:
                 head = f.readline()
-            elif header == False:
+            elif header is False:
                 head = ''
             else:
                 head = header
