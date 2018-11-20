@@ -2,6 +2,7 @@
 # -*- coding: utf-8 -*
 import pandas as pd
 import numpy as np
+import hashlib
 import pymysql
 import json
 import configparser
@@ -486,6 +487,15 @@ class rule(object):
             else:
                 pass
         return todo_list
+
+    def get_md5(self, value):
+        print(value)
+        string = str(value)
+        mdo = hashlib.md5()
+        mdo.update(string.encode("utf-8"))
+        res = mdo.hexdigest()
+        return res
+
 
 def main():
     """

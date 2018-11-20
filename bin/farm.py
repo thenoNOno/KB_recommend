@@ -254,12 +254,12 @@ class rater(worker):
     def __init__(self):
         pass
 
-    def run(self, nodes_doc, label_end, path_length, batch='64'):
+    def run(self, nodes_doc, label, label_end, path_length, batch='64'):
         nodes = self.collect(nodes_doc)
         label_end = label_end
         print('寻找label:', label_end)
         b = balance()
-        chances = b.assess(nodes, label_end, path_length, batch)
+        chances = b.assess(nodes, label, label_end, path_length, batch)
         chances_doc = nodes_doc+'_chances.txt'
         c = carrier()
         c.save_csv(chances, chances_doc)
@@ -292,12 +292,12 @@ class brave(worker):
     def __init__(self):
         pass
 
-    def run(self, nodes_doc, label_end, path_length, batch='32'):
+    def run(self, nodes_doc, label, label_end, path_length, batch='8'):
         nodes = self.collect(nodes_doc)
         label_end = label_end
         print('寻找label:', label_end)
         sn = snap_algo()
-        chances = sn.fall_loop(nodes, label_end, path_length, batch)
+        chances = sn.fall_loop(nodes, label, label_end, path_length, batch)
         chances_doc = nodes_doc+'_chances.txt'
         c = carrier()
         c.save_csv(chances, chances_doc)
@@ -330,13 +330,13 @@ class judge(worker):
     def __init__(self):
         pass
 
-    def run(self, nodes_doc, target_doc, label_end, path_length='1', sorter='sorter', worker='rater'):
-        nodes_docs = self.collect(nodes_doc, label_end, path_length, sorter, worker)
+    def run(self, nodes_doc, target_doc, label, label_end, path_length='1', sorter='sorter', worker='rater'):
+        nodes_docs = self.collect(nodes_doc, label, label_end, path_length, sorter, worker)
         chances_doc = self.save(nodes_docs, target_doc)
         self.chances_doc = chances_doc
         self.docs = chances_doc
 
-    def collect(self, doc, label_end, path_length, sorter, worker):
+    def collect(self, doc, label, label_end, path_length, sorter, worker):
         print('\n整理任务:', datetime.now())
         co = collection_room()
         nodes_docs = co.subtask(sorter, doc)
@@ -347,6 +347,7 @@ class judge(worker):
                                 , nodes_docs
                                 , '1'
                                 , workload
+                                , label=label
                                 , label_end=label_end
                                 , path_length=path_length)
         print('任务结束:', datetime.now())
@@ -456,17 +457,17 @@ class packer(worker):
     def __init__(self):
         pass
 
-    def run(self, content_doc, term_doc, mode='list'):
-        term_doc = self.collect(content_doc, term_doc, mode)
+    def run(self, content_doc, term_doc, style='list', mode='md5'):
+        term_doc = self.collect(content_doc, term_doc, style, mode)
         self.term_doc = term_doc
         self.docs = term_doc
 
-    def collect(self, content_doc, term_doc, mode):
+    def collect(self, content_doc, term_doc, style, mode):
         se = seeding()
-        if mode == 'line':
-            term_doc = se.get_full_line_term(content_doc, term_doc)
-        elif mode == 'list':
-            term_doc = se.get_full_list_term(content_doc, term_doc)
+        if style == 'line':
+            term_doc = se.get_full_line_term(content_doc, term_doc, mode)
+        elif style == 'list':
+            term_doc = se.get_full_list_term(content_doc, term_doc, mode)
         else:
             pass
         return term_doc
@@ -488,13 +489,13 @@ class packers(worker):
     def __init__(self):
         pass
 
-    def run(self, content_doc, sorter='sorter', worker='packer', mode='list', source='0', batch='100', label='content', label_end='term'):
-        term_doc = self.collect(content_doc, mode, sorter, worker, batch, label, label_end)
+    def run(self, content_doc, sorter='sorter', worker='packer', style='list', mode='md5', source='0', batch='100', label='content', label_end='term'):
+        term_doc = self.collect(content_doc, style, mode, sorter, worker, batch, label, label_end)
         self.save(term_doc, label, label_end, source)
         self.term_doc = term_doc
         self.docs = term_doc
 
-    def collect(self, content_doc, mode, sorter, worker, batch, label='content', label_end='term'):
+    def collect(self, content_doc, style, mode, sorter, worker, batch, label='content', label_end='term'):
         term_doc = content_doc+'_term.txt'
         #创建空的term_doc,写入列名
         term_head = 'pid '+label_end+'\n'
@@ -515,6 +516,7 @@ class packers(worker):
                                   , content_docs
                                   , term_doc
                                   , workload
+                                  , style=style
                                   , mode=mode)
         print('任务结束:', datetime.now())
         return term_doc

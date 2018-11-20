@@ -12,7 +12,10 @@ class forecast():
         self.filepath = filepath
         timestamp = int(time.time())
         r = rule()
-        self.todo_list = r.make_plan(timestamp, filepath, 'content.txt', '.txt')
+        self.todo_list = r.make_plan(timestamp
+                                     , filepath
+                                     , 'content.txt'
+                                     , '.txt')
         print(self.todo_list)
 
     def cast(self, filename):
@@ -21,13 +24,27 @@ class forecast():
         #信息获取
         co = collection_room()
         st = co.apply_worker('packers')
-        st.run(content_doc=content_doc, label='kbcontent', label_end='kbentity')
+        st.run(content_doc=content_doc
+               , sorter='sorter'
+               , worker='packer'
+               , style='list'
+               , mode='md5'
+               , source='0'
+               , batch='100'
+               , label='kbcontent'
+               , label_end='kbentity')
         print(st.term_doc)
         nodes_doc = st.term_doc
         #并行评估
         co = collection_room()
         ju = co.apply_worker('judge')
-        ju.run(nodes_doc=nodes_doc, target_doc=target_doc, label_end=['outside','kbentity','kbcontent'], path_length='3', worker='brave')
+        ju.run(nodes_doc=nodes_doc
+               , target_doc=target_doc
+               , label='kbentity'
+               , label_end=['kbvalue','kbentity','kbcontent']
+               , path_length='2'
+               , sorter='sorter'
+               , worker='brave')
         chances_doc = ju.chances_doc
         return chances_doc
 
@@ -39,12 +56,18 @@ class forecast():
         #归档2小时前的结果文件
         clean_timestamp = int(time.time())-7200
         r = rule()
-        clean_list = r.make_plan(clean_timestamp, self.filepath, 'content.txt_chances.txt', '.txt')
+        clean_list = r.make_plan(clean_timestamp
+                                 , self.filepath
+                                 , 'content.txt_chances.txt'
+                                 , '.txt')
         if clean_list:
             columns = ['pid','node','node_end','n_e','distance','mass','chance','length']
             target_file = self.filepath+'/all_chances.txt'
             w = writer()
-            w.merge_csv(clean_list, target_file, columns, mode='a')
+            w.merge_csv(clean_list
+                        , target_file
+                        , columns
+                        , mode='a')
             for filename in clean_list:
                 os.remove(filename)
         else:
@@ -71,7 +94,7 @@ class forecast():
             chances_doc = self.cast(filename)
             chances_docs.append(chances_doc)
             os.remove(filename)
-        #self.clean()
+        self.clean()
         return chances_docs
 
 def main():

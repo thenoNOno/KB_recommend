@@ -128,9 +128,10 @@ class seeding():
         c.save_txt(err_content, err_doc)
         return target_doc
 
-    def get_full_line_term(self, filename, target_doc):
+    def get_full_line_term(self, filename, target_doc, mode):
         c = carrier()
         w = writer()
+        r = rule()
         err_doc = target_doc+'_err_.txt'
         data = []
         err_cn = 0
@@ -149,14 +150,24 @@ class seeding():
                     err_cn = err_cn+1
                     err_content.append(str(columns))
                 tmp_cut_content = jieba.cut(content, cut_all=False, HMM=True)
-                cut_content = list(set(tmp_cut_content))
-                #拼接pid,term
-                if cut_content:
-                    flag = '\n'+pid+' '
-                    word_line = pid+' '+flag.join(cut_content)+'\n'
-                    data.append(word_line)
+                tmp_cut_content = list(set(tmp_cut_content))
+                if tmp_cut_content:
+                    pass
+                else:
+                    continue
+                if mode == 'term':
+                    cut_content = tmp_cut_content
+                elif mode == 'md5':
+                    cut_content = []
+                    for term in tmp_cut_content:
+                        term = r.get_md5(term)
+                        cut_content.append(term)
                 else:
                     pass
+                #拼接pid,term
+                flag = '\n'+pid+' '
+                word_line = pid+' '+flag.join(cut_content)+'\n'
+                data.append(word_line)
                 # 批量写出,防止分词占用内存过多
                 data = w.save_txt_batch(data, target_doc, 100)
         if data:
@@ -166,9 +177,10 @@ class seeding():
         c.save_txt(err_content, err_doc)
         return target_doc
 
-    def get_full_list_term(self, filename, target_doc):
+    def get_full_list_term(self, filename, target_doc, mode):
         c = carrier()
         w = writer()
+        r = rule()
         err_doc = target_doc+'_err_.txt'
         data = []
         err_cn = 0
@@ -187,14 +199,24 @@ class seeding():
                     err_cn = err_cn+1
                     err_content.append(str(columns))
                 tmp_cut_content = jieba.cut(content, cut_all=False, HMM=True)
-                cut_content = list(set(tmp_cut_content))
-                if cut_content:
-                    flag = ','
-                    flag_line = flag.join(cut_content)
-                    word_line = pid+' '+flag_line+'\n'
-                    data.append(word_line)
+                tmp_cut_content = list(set(tmp_cut_content))
+                if tmp_cut_content:
+                    pass
+                else:
+                    continue
+                if mode == 'term':
+                    cut_content = tmp_cut_content
+                elif mode == 'md5':
+                    cut_content = []
+                    for term in tmp_cut_content:
+                        term = r.get_md5(term)
+                        cut_content.append(term)
                 else:
                     pass
+                flag = ','
+                flag_line = flag.join(cut_content)
+                word_line = pid+' '+flag_line+'\n'
+                data.append(word_line)
                 # 批量写出,防止分词占用内存过多
                 data = w.save_txt_batch(data, target_doc, 100)
         if data:

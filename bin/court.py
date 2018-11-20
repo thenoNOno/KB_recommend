@@ -29,18 +29,14 @@ order by mass desc
         dataframe = pd.DataFrame(data)
         return dataframe
 
-    def assess_distance(self, pid, node, label_end, path_length, batch):
+    def assess_distance(self, pid, node, label, label_end, path_length, batch):
         """
         查找某实体与类的实体之间的路径,给出两个实体之间的distance
 
         根据路径权重计算,即实体A与实体之间的关联度
         """
-        pid = pid
-        node = node
-        label_end = label_end
-        batch = batch
         filt = f''' n.pid in [{node}] '''
-        cypher = f'''match p=(n:outside)-[*0..{path_length}]-(n_e:{label_end})
+        cypher = f'''match p=(n:{label})-[*0..{path_length}]-(n_e:{label_end})
         where {filt}
         with *,extract(x IN relationships(p)|(100.0-toFloat(coalesce(x.norm,0.0)))) as distances
         return distinct
@@ -54,16 +50,12 @@ order by mass desc
         dataframe = pd.DataFrame(data)
         return dataframe
 
-    def assess_chance(self, pid, node, label_end, path_length, batch):
+    def assess_chance(self, pid, node, label, label_end, path_length, batch):
         """
         查找某实体与某类实体中的每一个,相遇的概率
 
         """
-        pid = pid
-        node = node
-        label_end = label_end
-        batch = batch
-        distance = self.assess_distance(pid, node, label_end, path_length, batch)
+        distance = self.assess_distance(pid, node, label, label_end, path_length, batch)
         if distance.empty:
             return distance
         node_list = list(distance['n_e'].drop_duplicates())
@@ -81,14 +73,14 @@ order by mass desc
                                         , ascending=[False,False,True])
         return chance
 
-    def assess(self, nodes, label_end, path_length, batch):
+    def assess(self, nodes, label, label_end, path_length, batch):
         chances = pd.DataFrame(columns=['pid','node_end','n_e','distance','mass','chance','length'])
         b = balance()
         for line in nodes:
             line = line.split(' ', 1)
             pid = line[0]
             node = line[1]
-            chance = b.assess_chance(pid, node, label_end, path_length, batch)
+            chance = b.assess_chance(pid, node, label, label_end, path_length, batch)
             if chance.empty:
                 pass
             else:
@@ -101,9 +93,9 @@ class snap_algo():
     算法优化
 
     """
-    def fall_next(self, nodes, label_end, batch):
-        cypher = f'''match (n)-[r]-(n_e:{label_end})
-        where n.pid in {nodes} or n.name in {nodes}
+    def fall_next(self, nodes, label, label_end, batch):
+        cypher = f'''match (n:{label})-[r]-(n_e:{label_end})
+        where n.pid in {nodes}
         return n_e.pid as n_e, n_e.mass as mass, sum(toFloat(r.norm)) as norm
         order by n_e.mass desc
         limit {batch}
@@ -114,13 +106,14 @@ class snap_algo():
         dataframe = pd.DataFrame(data)
         return dataframe
 
-    def fall_step(self, pid, nodes, label_end, path_length, batch):
+    def fall_step(self, pid, nodes, label, label_end, path_length, batch):
         step = 0
         tmp_nodes = '['+nodes+']'
         path = pd.DataFrame(columns=['pid','n_e','mass','norm','step'])
         while step < int(path_length):
             tmp_label_end = label_end[step]
-            tmp_path = self.fall_next(tmp_nodes, tmp_label_end, batch)
+            tmp_path = self.fall_next(tmp_nodes, label, tmp_label_end, batch)
+            label = tmp_label_end
             tmp_path['pid'] = pid
             tmp_path['step'] = step
             if tmp_path.empty:
@@ -131,8 +124,8 @@ class snap_algo():
         path = path.append(tmp_path, ignore_index=True)
         return path
 
-    def fall_stop(self, pid, nodes, label_end, path_length, batch):
-        path = self.fall_step(pid, nodes, label_end, path_length, batch)
+    def fall_stop(self, pid, nodes, label, label_end, path_length, batch):
+        path = self.fall_step(pid, nodes, label, label_end, path_length, batch)
         if path.empty:
             return path
         else:
@@ -141,13 +134,13 @@ class snap_algo():
                                     , ascending=False)[0:2]
         return path
 
-    def fall_loop(self, nodes, label_end, path_length, batch):
+    def fall_loop(self, nodes, label, label_end, path_length, batch):
         chances = pd.DataFrame(columns=['pid','n_e','norm','mass','step'])
         for line in nodes:
             line = line.split(' ', 1)
             pid = line[0]
             node = line[1]
-            chance = self.fall_stop(pid, node, label_end, path_length, batch)
+            chance = self.fall_stop(pid, node, label, label_end, path_length, batch)
             if chance.empty:
                 pass
             else:
