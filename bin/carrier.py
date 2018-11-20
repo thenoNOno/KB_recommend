@@ -330,7 +330,7 @@ class writer(object):
             if sql_0 and sql_1:
                 c.execute_data(load_sql, data)
                 select_sql = f'select * from {table};'
-                batch = '{batchSize:10000, iterateList:true, parallel:true}'
+                batch = '{batchSize:10000, parallel:false, iterateList:true}'
                 cypher = f'''
                 CALL apoc.periodic.iterate(
                 'CALL apoc.load.jdbc("{source}","{select_sql}") YIELD row return row'

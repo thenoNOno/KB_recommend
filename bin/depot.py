@@ -60,7 +60,7 @@ class seeding():
         c.save_txt(err_content, err_doc)
         return target_doc
 
-    def store_away(self, filename, source):
+    def store_away(self, filename, label, label_end, source):
         """
         将类拆分子类的结果写入知识图谱
 
@@ -69,8 +69,6 @@ class seeding():
         """
         c = carrier()
         w = writer()
-        label = 'content'
-        label_end = 'term'
         target_doc = filename+'.csv'
         event_df = pd.read_table(filename, encoding='utf8', sep=' ')
         event_df.columns = (label, label_end)

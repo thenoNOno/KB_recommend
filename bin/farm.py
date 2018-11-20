@@ -488,22 +488,22 @@ class packers(worker):
     def __init__(self):
         pass
 
-    def run(self, content_doc, worker='packer', mode='list', source='0', batch='100'):
-        term_doc = self.collect(content_doc, mode, sorter, worker, batch)
-        self.save(term_doc, source)
+    def run(self, content_doc, sorter='sorter', worker='packer', mode='list', source='0', batch='100', label='content', label_end='term'):
+        term_doc = self.collect(content_doc, mode, sorter, worker, batch, label, label_end)
+        self.save(term_doc, label, label_end, source)
         self.term_doc = term_doc
         self.docs = term_doc
 
-    def collect(self, content_doc, mode, sorter, worker, batch):
+    def collect(self, content_doc, mode, sorter, worker, batch, label='content', label_end='term'):
         term_doc = content_doc+'_term.txt'
         #创建空的term_doc,写入列名
-        term_head = 'pid term\n'
+        term_head = 'pid '+label_end+'\n'
         with open(term_doc, 'w', encoding='utf8') as f:
             f.write(term_head)
         #开始任务
         print('\n整理任务:', datetime.now())
         co = collection_room()
-        content_head = 'pid content\n'
+        content_head = 'pid '+label+'\n'
         content_docs = co.subtask(sorter
                                   , content_doc
                                   , header=content_head
@@ -519,7 +519,7 @@ class packers(worker):
         print('任务结束:', datetime.now())
         return term_doc
 
-    def save(self, term_doc, source):
+    def save(self, term_doc, label, label_end, source):
         """
         保存信息到图谱
 
@@ -529,7 +529,7 @@ class packers(worker):
         else:
             pass
         se = seeding()
-        res = se.store_away(term_doc, source)
+        res = se.store_away(term_doc, label, label_end, source)
         print('content_term已导入图谱')
 
 

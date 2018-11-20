@@ -103,7 +103,7 @@ class snap_algo():
     """
     def fall_next(self, nodes, label_end, batch):
         cypher = f'''match (n)-[r]-(n_e:{label_end})
-        where n.pid in {nodes}
+        where n.pid in {nodes} or n.name in {nodes}
         return n_e.pid as n_e, n_e.mass as mass, sum(toFloat(r.norm)) as norm
         order by n_e.mass desc
         limit {batch}

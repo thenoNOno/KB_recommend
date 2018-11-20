@@ -20,14 +20,14 @@ class forecast():
         target_doc = content_doc+'_chances.txt'
         #信息获取
         co = collection_room()
-        st = co.apply_worker('stockman')
-        st.run(content_doc=content_doc, worker='packer', mode='list')
+        st = co.apply_worker('packers')
+        st.run(content_doc=content_doc, label='kbcontent', label_end='kbentity')
         print(st.term_doc)
         nodes_doc = st.term_doc
         #并行评估
         co = collection_room()
         ju = co.apply_worker('judge')
-        ju.run(nodes_doc, target_doc, ['entity','entity','term','content'], path_length='4', worker='brave')
+        ju.run(nodes_doc=nodes_doc, target_doc=target_doc, label_end=['outside','kbentity','kbcontent'], path_length='3', worker='brave')
         chances_doc = ju.chances_doc
         return chances_doc
 
@@ -71,7 +71,7 @@ class forecast():
             chances_doc = self.cast(filename)
             chances_docs.append(chances_doc)
             os.remove(filename)
-        self.clean()
+        #self.clean()
         return chances_docs
 
 def main():
